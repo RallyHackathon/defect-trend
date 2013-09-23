@@ -64,7 +64,7 @@ Ext.define('CustomApp', {
                     console.log("data, " , data);
                 }
             },
-            fetch: ['Name'],
+            fetch: ['Name', 'Severity'],
             autoLoad: true,
             context: {
                 workspace: '/workspace/41529001',
@@ -72,6 +72,7 @@ Ext.define('CustomApp', {
                 projectScopeUp: false,
                 projectScopeDown: true,
             },
+            hydrate: ['Severity'],
             filters: [
                 {
                     property: '_TypeHierarchy',
@@ -80,8 +81,13 @@ Ext.define('CustomApp', {
                 },
                 {
                     property: 'Severity',
-                    operator: '=',
+                    operator: 'in',
                     value: ['Minor Problem']
+                },
+                {
+                    property: "Project",
+                    operator: "in",
+                    value: [279050021]
                 }
                 // {
                 //     propert: "__At",
