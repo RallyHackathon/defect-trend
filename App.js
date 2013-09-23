@@ -24,19 +24,16 @@ Ext.define('CustomApp', {
                 text: 'Source: Wikipedia.org'
             },
             xAxis: {
-                categories: ['1750', '1800', '1850', '1900', '1950', '1999', '2050'],
-                tickmarkPlacement: 'on',
-                title: {
-                    enabled: false
-                }
+                type: 'datetime',
+                dateTimeLabelFormats: {day:'%e of %b'}
             },
             yAxis: {
                 title: {
-                    text: 'Billions'
+                    text: 'Count'
                 },
                 labels: {
                     formatter: function() {
-                        return this.value / 1000;
+                        return this.value;
                     }
                 }
             },
@@ -60,9 +57,47 @@ Ext.define('CustomApp', {
     },
     
     _getChartData: function() {
+        console.log("Get chart data");        
+        Ext.create('Rally.data.lookback.SnapshotStore', {
+            listeners: {
+                load: function(store, data, success) {
+                    console.log("data, " , data);
+                }
+            },
+            fetch: ['Name'],
+            autoLoad: true,
+            context: {
+                workspace: '/workspace/41529001',
+                project: '/project/279050021',
+                projectScopeUp: false,
+                projectScopeDown: true,
+            },
+            filters: [
+                {
+                    property: '_TypeHierarchy',
+                    operator: 'in',
+                    value: ['Defect']
+                },
+                {
+                    property: 'Severity',
+                    operator: '=',
+                    value: ['Minor Problem']
+                }
+                // {
+                //     propert: "__At",
+                //     value: "2013-09-22T00:00:00Z"
+                // }
+            ]
+        });
+        
+        var criticalSeries = [2, 5, 8, 9, 14, 6, 2,2, 5, 8, 9, 14, 6, 2];
+        
+        
         return {series: [{
-                name: 'Asia',
-                data: [502, 635, 809, 947, 1402, 3634, 5268]
+                name: 'Critical',
+                data: criticalSeries,
+                pointStart: Date.UTC(2013,0,1),
+                pointInterval: 24*3600*1000
             }
             // , 
             // {
