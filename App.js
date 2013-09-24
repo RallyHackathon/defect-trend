@@ -3,13 +3,45 @@ Ext.define('CustomApp', {
     componentCls: 'app',
 
     launch: function() {
-        var myChart = Ext.create("Rally.ui.chart.Chart", {
-            chartConfig: this._getChartConfiguration(),
-            chartData: this._getChartData()
+        this._getChartData();
+    },
+    
+    _getChartData: function() {
+        Ext.create('Rally.data.lookback.SnapshotStore', {
+            listeners: {
+                load: this._onDefectsLoaded,
+                scope: this
+            },
+            fetch: ['Name', 'Severity'],
+            autoLoad: true,
+            context: {
+                workspace: '/workspace/41529001',
+                project: '/project/279050021',
+                projectScopeUp: false,
+                projectScopeDown: true,
+            },
+            hydrate: ['Severity'],
+            filters: [
+                {
+                    property: '_TypeHierarchy',
+                    operator: 'in',
+                    value: ['Defect']
+                },
+                {
+                    property: 'Severity',
+                    operator: 'in',
+                    value: ['Minor Problem', 'Major Problem', 'Cosmetic']
+                },
+                {
+                    property: "Project",
+                    operator: "in",
+                    value: [279050021]
+                }
+
+            ],
+            scope: this
         });
         
-        this.add(myChart);
-
     },
     
     _getChartConfiguration: function() {
@@ -53,82 +85,15 @@ Ext.define('CustomApp', {
                 }
             }
         }
- 
     },
     
-    _getChartData: function() {
-        Ext.create('Rally.data.lookback.SnapshotStore', {
-            listeners: {
-                load: this._onReleaseSnapShotData
-            },
-            fetch: ['Name', 'Severity'],
-            autoLoad: true,
-            context: {
-                workspace: '/workspace/41529001',
-                project: '/project/279050021',
-                projectScopeUp: false,
-                projectScopeDown: true,
-            },
-            hydrate: ['Severity'],
-            filters: [
-                {
-                    property: '_TypeHierarchy',
-                    operator: 'in',
-                    value: ['Defect']
-                },
-                {
-                    property: 'Severity',
-                    operator: 'in',
-                    value: ['Minor Problem']
-                },
-                {
-                    property: "Project",
-                    operator: "in",
-                    value: [279050021]
-                }
-                // {
-                //     propert: "__At",
-                //     value: "2013-09-22T00:00:00Z"
-                // }
-            ],
-            scope: this
-        });
-        
-        var criticalSeries = [2, 5, 8, 9, 14, 6, 2,2, 5, 8, 9, 14, 6, 2];
-        
-        
-        return {series: [{
-                name: 'Critical',
-                data: criticalSeries,
-                pointStart: Date.UTC(2013,0,1),
-                pointInterval: 24*3600*1000
-            }
-            // , 
-            // {
-            //     name: 'Africa',
-            //     data: [106, 107, 111, 133, 221, 767, 1766]
-            // }, {
-            //     name: 'Europe',
-            //     data: [163, 203, 276, 408, 547, 729, 628]
-            // }, {
-            //     name: 'America',
-            //     data: [18, 31, 54, 156, 339, 818, 1201]
-            // }, {
-            //     name: 'Oceania',
-            //     data: [2, 2, 2, 6, 13, 30, 46]
-            // }
-        ]}
-        
-    },
-    
-    _onReleaseSnapShotData: function (store,data,success) {
+    _onDefectsLoaded: function (store,data,success) {
         // we are going to use lumenize and the TimeSeriesCalculator to aggregate the data into 
         // a time series.
-        var that = this;
         var lumenize = window.parent.Rally.data.lookback.Lumenize;
         var snapShotData = _.map(data,function(d){return d.data});      
         
-        console.log("snapshot data:",data);
+        console.log("snapshots:",data);
 
 
         // can be used to 'knockout' holidays
@@ -158,19 +123,19 @@ Ext.define('CustomApp', {
         
         // calculator config
         var config = {
-          deriveFieldsOnInput: deriveFieldsOnInput,
           metrics: metrics,
-          summaryMetricsConfig: summaryMetricsConfig,
-          deriveFieldsAfterSummary: derivedFieldsAfterSummary,
           granularity: lumenize.Time.DAY,
           tz: 'America/Chicago',
           holidays: holidays,
-          workDays: 'Monday,Tuesday,Wednesday,Thursday,Friday'
+          workDays: 'Monday,Tuesday,Wednesday,Thursday,Friday',
+          summaryMetricsConfig: summaryMetricsConfig,
+          deriveFieldsAfterSummary: derivedFieldsAfterSummary,
+          deriveFieldsOnInput: deriveFieldsOnInput,
         };
         
         // release start and end dates
         var startOnISOString = new lumenize.Time("2013-01-01").getISOStringInTZ(config.tz)
-        var upToDateISOString = new lumenize.Time("2013-02-02").getISOStringInTZ(config.tz)
+        var upToDateISOString = new lumenize.Time("2013-09-01").getISOStringInTZ(config.tz)
         
         // create the calculator and add snapshots to it.
         //calculator = new Rally.data.lookback.Lumenize.TimeSeriesCalculator(config);
@@ -178,16 +143,18 @@ Ext.define('CustomApp', {
         calculator.addSnapshots(snapShotData, startOnISOString, upToDateISOString);
 
         // create a high charts series config object, used to get the hc series data
-        var hcConfig = [{ name: "label" }, { name : "defectMajor" }, { name : "defectMinor"},{name:"defectCosmetic"}];
-        var hc = lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
+        var hcConfig = [ { name : "defectMajor" }, { name : "defectMinor"},{name:"defectCosmetic"}];
+        var hcData = lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
 
-        // display the chart
+        console.log("hc: ", hcData);
+
+        var myChart = Ext.create("Rally.ui.chart.Chart", {
+            chartConfig: this._getChartConfiguration(),
+            chartData: {
+                series: hcData
+            }
+        });
         
-        //this._showChart(hc);
-        
-        console.log("hc: ", hc);
-                
+        this.add(myChart);
     }
-    
-    
 });
