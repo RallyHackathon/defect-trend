@@ -142,7 +142,7 @@ Ext.define('CustomApp', {
             {as: 'defectMinor',   f: 'filteredCount', filterField: 'Severity', filterValues: ["Minor Problem"]},
             {as: 'defectCosmetic', f: 'filteredCount', filterField: 'Severity', filterValues: ["Cosmetic"]}
         ];
-
+ 
         // not used yet
         var summaryMetricsConfig = [
         ];
