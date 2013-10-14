@@ -56,8 +56,7 @@ Ext.define('CustomApp', {
                 text: 'Source: Wikipedia.org'
             },
             xAxis: {
-                type: 'datetime',
-                dateTimeLabelFormats: {day:'%e of %b'}
+                type: 'datetime'
             },
             yAxis: {
                 title: {
@@ -135,7 +134,7 @@ Ext.define('CustomApp', {
         
         // release start and end dates
         var startOnISOString = new lumenize.Time("2013-01-01").getISOStringInTZ(config.tz)
-        var upToDateISOString = new lumenize.Time("2013-09-01").getISOStringInTZ(config.tz)
+        var upToDateISOString = new lumenize.Time("2013-01-30").getISOStringInTZ(config.tz)
         
         // create the calculator and add snapshots to it.
         //calculator = new Rally.data.lookback.Lumenize.TimeSeriesCalculator(config);
@@ -145,6 +144,11 @@ Ext.define('CustomApp', {
         // create a high charts series config object, used to get the hc series data
         var hcConfig = [ { name : "defectMajor" }, { name : "defectMinor"},{name:"defectCosmetic"}];
         var hcData = lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
+
+        _.each(hcData, function(seriesObj) {
+            seriesObj.pointStart = Date.UTC(2013, 0, 1);
+            seriesObj.pointInterval = 24 * 3600 * 1000
+        });
 
         console.log("hc: ", hcData);
 
