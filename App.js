@@ -69,8 +69,7 @@ Ext.define('CustomApp', {
                 }
             },
             tooltip: {
-                shared: true,
-                valueSuffix: ' millions'
+                shared: true
             },
             plotOptions: {
                 area: {
