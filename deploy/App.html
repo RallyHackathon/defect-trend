@@ -4,27 +4,390 @@
     <title>defect-trend</title>
 
     <script type="text/javascript" src="/apps/2.0rc1/sdk.js"></script>
-    <script type="text/javascript" src="https://rally1.rallydev.com/apps/2.0rc1/lib/analytics/analytics-all.js"></script>
+
+
 
     <script type="text/javascript">
         Rally.onReady(function () {
-                Ext.define("CustomApp",{extend:"Rally.app.App",componentCls:"app",launch:function(){this._getChartData()},_getChartData:function(){console.log("context",this.getContext(),this.getContext().getWorkspace(),this.getContext().getProject()),Ext.create("Rally.data.lookback.SnapshotStore",{listeners:{load:this._onDefectsLoaded,scope:this},fetch:["Name","Severity"],autoLoad:!0,context:{workspace:this.getContext().getWorkspaceRef(),project:this.getContext().getProjectRef(),projectScopeUp:!1,projectScopeDown:!0},hydrate:["Severity"],filters:[{property:"_TypeHierarchy",operator:"in",value:["Defect"]},{property:"Severity",operator:"in",value:["Minor Problem","Major Problem","Cosmetic"]},{property:"Project",operator:"in",value:[this.getContext().getProject().ObjectID]}],scope:this}),console.log("project",this.getContext().getProject())},_getChartConfiguration:function(){return{chart:{type:"area"},title:{text:"Defect Trend"},subtitle:{text:"by Severity"},xAxis:{type:"datetime"},yAxis:{title:{text:"Count"},labels:{formatter:function(){return this.value}}},tooltip:{shared:!0},plotOptions:{area:{stacking:"normal",lineColor:"#666666",lineWidth:1,marker:{lineWidth:1,lineColor:"#666666"}}}}},_onDefectsLoaded:function(store,data,success){var lumenize=window.parent.Rally.data.lookback.Lumenize,snapShotData=_.map(data,function(d){return d.data});console.log("snapshots:",data);var holidays=[{year:2014,month:1,day:1}],metrics=[{as:"defectMajor",f:"filteredCount",filterField:"Severity",filterValues:["Major Problem"]},{as:"defectMinor",f:"filteredCount",filterField:"Severity",filterValues:["Minor Problem"]},{as:"defectCosmetic",f:"filteredCount",filterField:"Severity",filterValues:["Cosmetic"]}],summaryMetricsConfig=[],derivedFieldsAfterSummary=[],deriveFieldsOnInput=[],config={metrics:metrics,granularity:lumenize.Time.DAY,tz:"America/Chicago",holidays:holidays,workDays:"Monday,Tuesday,Wednesday,Thursday,Friday",summaryMetricsConfig:summaryMetricsConfig,deriveFieldsAfterSummary:derivedFieldsAfterSummary,deriveFieldsOnInput:deriveFieldsOnInput},startOnISOString=new lumenize.Time("2013-09-15").getISOStringInTZ(config.tz),upToDateISOString=new lumenize.Time("2013-10-15").getISOStringInTZ(config.tz);calculator=new lumenize.TimeSeriesCalculator(config),calculator.addSnapshots(snapShotData,startOnISOString,upToDateISOString);var hcConfig=[{name:"defectMajor"},{name:"defectMinor"},{name:"defectCosmetic"}],hcData=lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData,hcConfig);_.each(hcData,function(seriesObj){seriesObj.pointStart=Date.UTC(2013,8,15),seriesObj.pointInterval=864e5}),console.log("chart data: ",hcData);var myChart=Ext.create("Rally.ui.chart.Chart",{chartConfig:this._getChartConfiguration(),chartData:{series:hcData}});this.add(myChart)}});
+Ext.define('CustomApp', {
+    extend: 'Rally.app.App',
+    componentCls: 'app',
 
+    items: 
+    [
+        {
+            xtype: 'dayrangepicker',
+            itemId: 'dayRangePicker',
+            defaultSelection: '90',   // 30|60|90
+            autoLoadSelection: true
+        }
+    ],
+
+    dayRange: 90,
+
+    launch: function() {
+        this.down('#dayRangePicker').on({
+            on30clicked: function() {
+                console.log(30);
+                this.dayRange = DayRangePicker.THIRTY
+                this._getChartData();
+            },
+            on60clicked: function() {
+                console.log(60);
+                this.dayRange = DayRangePicker.SIXTY
+                this._getChartData();
+            },
+            on90clicked: function() {
+                console.log(90);
+                this.dayRange = DayRangePicker.NINETY
+                this._getChartData();
+            },
+            scope: this
+        });
+    },
+    
+    _getChartData: function() {
+
+        if (this.down("#myChart")) {
+          this.down("#myChart").removeAll();
+        }
+
+        console.log('getChartData');
+        Ext.create('Rally.data.lookback.SnapshotStore', {
+            listeners: {
+                load: this._onDefectsLoaded,
+                scope: this
+            },
+            fetch: ['Name', 'Severity'],
+            autoLoad: true,
+            context: {
+                workspace: '/workspace/41529001',
+                project: '/project/279050021',
+                projectScopeUp: false,
+                projectScopeDown: true,
+            },
+            hydrate: ['Severity'],
+            filters: [
+                {
+                    property: '_TypeHierarchy',
+                    operator: 'in',
+                    value: ['Defect']
+                },
+                {
+                    property: 'Severity',
+                    operator: 'in',
+                    value: ['Minor Problem', 'Major Problem', 'Cosmetic']
+                },
+                {
+                    property: "Project",
+                    operator: "in",
+                    value: [279050021]
+                }
+
+            ],
+            scope: this
+        });
+        
+    },
+    
+    _getChartConfiguration: function() {
+        return{
+          chart: {
+                type: 'area'
+            },
+            title: {
+                text: 'Historic and Estimated Worldwide Population Growth by Region'
+            },
+            subtitle: {
+                text: 'Source: Wikipedia.org'
+            },
+            xAxis: {
+                type: 'datetime'
+            },
+            yAxis: {
+                title: {
+                    text: 'Count'
+                },
+                labels: {
+                    formatter: function() {
+                        return this.value;
+                    }
+                }
+            },
+            tooltip: {
+                shared: true
+            },
+            plotOptions: {
+                area: {
+                    stacking: 'normal',
+                    lineColor: '#666666',
+                    lineWidth: 1,
+                    marker: {
+                        lineWidth: 1,
+                        lineColor: '#666666'
+                    }
+                }
+            }
+        }
+    },
+    
+    _onDefectsLoaded: function (store,data,success) {
+        // we are going to use lumenize and the TimeSeriesCalculator to aggregate the data into 
+        // a time series.
+        console.log('onDefectsLoaded');
+        var lumenize = window.parent.Rally.data.lookback.Lumenize;
+        var snapShotData = _.map(data,function(d){return d.data});      
+        
+
+
+        // can be used to 'knockout' holidays
+        var holidays = [
+            {year: 2014, month: 1, day: 1}  // Made up holiday to test knockout
+        ];
+
+        // metrics to chart
+        var metrics = [
+            {as: 'defectMajor',     f: 'filteredCount', filterField: 'Severity', filterValues: ["Major Problem"]},
+            {as: 'defectMinor',   f: 'filteredCount', filterField: 'Severity', filterValues: ["Minor Problem"]},
+            {as: 'defectCosmetic', f: 'filteredCount', filterField: 'Severity', filterValues: ["Cosmetic"]}
+        ];
+ 
+        // not used yet
+        var summaryMetricsConfig = [
+        ];
+        
+        var derivedFieldsAfterSummary = [
+        ];
+
+        // not used yet
+        var deriveFieldsOnInput = [
+        ];
+        
+        // small change
+        
+        // calculator config
+        var config = {
+          metrics: metrics,
+          granularity: lumenize.Time.DAY,
+          tz: 'America/Chicago',
+          holidays: holidays,
+          workDays: 'Monday,Tuesday,Wednesday,Thursday,Friday',
+          summaryMetricsConfig: summaryMetricsConfig,
+          deriveFieldsAfterSummary: derivedFieldsAfterSummary,
+          deriveFieldsOnInput: deriveFieldsOnInput,
+        };
+        
+
+
+
+
+        // release start and end dates
+
+        var daysAgo = Ext.Date.add(new Date(), Ext.Date.DAY, -this.dayRange);
+        console.log('daysAgo: ' + daysAgo);
+
+        var currentDate = Ext.Date.add(new Date(), Ext.Date.DAY, 0);
+        console.log('currentDate: ' + currentDate);
+
+        var startOnISOString = Rally.util.DateTime.toIsoString(daysAgo, true);
+        var upToDateISOString = Rally.util.DateTime.toIsoString(currentDate, true);
+        //var startOnISOString = new lumenize.Time("2013-01-01").getISOStringInTZ(config.tz)
+        //var upToDateISOString = new lumenize.Time("2013-01-30").getISOStringInTZ(config.tz)
+
+        console.log('startISO: ' + startOnISOString);
+        console.log('endISO: ' + upToDateISOString);
+        
+        // create the calculator and add snapshots to it.
+        //calculator = new Rally.data.lookback.Lumenize.TimeSeriesCalculator(config);
+        calculator = new lumenize.TimeSeriesCalculator(config);
+        calculator.addSnapshots(snapShotData, startOnISOString, upToDateISOString);
+
+        // create a high charts series config object, used to get the hc series data
+        var hcConfig = [ { name : "defectMajor" }, { name : "defectMinor"},{name:"defectCosmetic"}];
+        var hcData = lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
+
+        var dt;
+
+        _.each(hcData, function(seriesObj) {
+
+            dt = Ext.Date.format(daysAgo, 'Y-m-d').split("-");
+
+            seriesObj.pointStart = Date.UTC(dt[0], dt[1] - 1, dt[2]);
+
+            console.log('Mine: ' + seriesObj.pointStart);
+            console.log('Correct: ' + Date.UTC(2013, 9, 18));
+
+
+            seriesObj.pointInterval = 24 * 3600 * 1000
+        });
+
+
+        var myChart = Ext.create("Rally.ui.chart.Chart", {
+            chartConfig: this._getChartConfiguration(),
+            chartData: {
+                series: hcData
+            },
+            itemId: 'myChart'
+        });
+        
+        this.add(myChart);
+    }
+});
+
+Ext.define('DayRangePicker', {
+  extend: 'Ext.Component',
+  alias: 'widget.dayrangepicker',
+  statics: {  // constants representing selected values
+      THIRTY: '30',
+      SIXTY: '60',
+      NINETY: '90'
+  },
+  config: {   // default settings
+    defaultSelection: '90',
+    autoLoadSelection: false
+  },
+  constructor: function(config) {
+    // merge core config and provide custom get/set methods
+    this.initConfig(config);
+    // validate config
+    this._validateSettings();
+    // wire up parent
+    this.callParent(arguments);
+    // define custom click events; logic below will fire them as needed
+    this.addEvents('on30clicked', 'on60clicked', 'on90clicked');
+    // this picker will listen for OTHER pickers setting their values
+    Rally.environment.getMessageBus().subscribe('DayRangePicker.rangeChanged', this._onRangeChanged, this);
+  },
+
+  renderTpl: '<span id="{id}-s30">30 days</span>  |  <span id="{id}-s60">60 days</span>  |  <span id="{id}-s90">90 days</span>',
+  childEls: ["s30", "s60", "s90"],
+  style: {
+    textAlign: 'center',
+    paddingTop: '5px',
+    paddingBottom: '5px;'
+  },
+
+  // toggle view of all links depending on which is selected; also fire message to other 30/60/90 widgets
+  listeners: {
+    on30clicked: function() {
+      if(this.s30.hasCls('selected') ){ return; }  // already selected, do nothing
+      this.s30.removeCls('selected').removeCls('notselected').addCls('selected')
+      this.s60.removeCls('selected').removeCls('notselected').addCls('notselected');
+      this.s90.removeCls('selected').removeCls('notselected').addCls('notselected');
+      Rally.environment.getMessageBus().publish('DayRangePicker.rangeChanged', DayRangePicker.THIRTY, this);
+    },
+    on60clicked: function() {
+       if(this.s60.hasCls('selected')){ return; } // already selected, do nothing
+      this.s60.removeCls('selected').removeCls('notselected').addCls('selected')
+      this.s30.removeCls('selected').removeCls('notselected').addCls('notselected');
+      this.s90.removeCls('selected').removeCls('notselected').addCls('notselected');
+      Rally.environment.getMessageBus().publish('DayRangePicker.rangeChanged', DayRangePicker.SIXTY, this);
+    },
+    on90clicked: function() {
+      if(this.s90.hasCls('selected')) { return; } // already selected, do nothing
+      this.s90.removeCls('selected').removeCls('notselected').addCls('selected')
+      this.s60.removeCls('selected').removeCls('notselected').addCls('notselected');
+      this.s30.removeCls('selected').removeCls('notselected').addCls('notselected');
+      Rally.environment.getMessageBus().publish('DayRangePicker.rangeChanged', DayRangePicker.NINETY, this);
+    }
+  },
+
+  afterRender: function() {
+
+    // assume all links are Off
+    this.s30.addCls('notselected');
+    this.s60.addCls('notselected');
+    this.s90.addCls('notselected');
+
+    // fire specific 30/60/90 public events when the links are clicked
+    this.s30.on('click', function() { this.fireEvent('on30clicked'); }, this);
+    this.s60.on('click', function() { this.fireEvent('on60clicked'); }, this);
+    this.s90.on('click', function() { this.fireEvent('on90clicked'); }, this);
+    if (this.getAutoLoadSelection()) {
+      // turn On selected link based on default config value
+      this['s' + this.getDefaultSelection()].removeCls('notselected').addCls('selected');
+      // fire event for selected link
+      this.fireEvent('on' + this.getDefaultSelection() + 'clicked'); 
+    }
+  },
+
+  _onRangeChanged: function(dayRange, source) {
+      // skip own range change request messages
+      if (source === this) { return; };
+
+      switch(dayRange) {
+        case DayRangePicker.THIRTY:
+          this.fireEvent('on30clicked');
+          break;
+        case DayRangePicker.SIXTY:
+          this.fireEvent('on60clicked');
+          break;
+        case DayRangePicker.NINETY:
+          this.fireEvent('on90clicked');
+          break;
+      }
+  },
+
+  _validateSettings: function(config) {
+    if (!(this.getDefaultSelection() === DayRangePicker.THIRTY ||
+          this.getDefaultSelection() === DayRangePicker.SIXTY ||
+          this.getDefaultSelection() === DayRangePicker.NINETY)) {
+      // TODO: proper error handling?  not sure about try/catch for a widget
+      console.error("Invalid 'defaultSelection' setting [" + this.getDefaultSelection() + "].  Must be 30, 60, or 90.  Defaulting to " + DayRangePicker.THIRTY + ".");
+      // default to lowest value
+      //config.defaultSelection = DayRangePicker.THIRTY;
+      this.setDefaultSelection(DayRangePicker.SIXTY);
+
+    }
+  }
+
+});
+
+            
             Rally.launchApp('CustomApp', {
                 name:"defect-trend",
-	            parentRepos:""
+                parentRepos:""
             });
 
         });
     </script>
 
 
+
+
     <style type="text/css">
         .app {
-     /* Add app styles here */
-}
-
+        
+        }
+        
+        .reworkCountNumber {
+            font-family: 'Carter One', cursive;
+            font-family: 'Leckerli One', cursive;
+            font-size: 10em;
+            text-align: center
+        }
+        
+        .reworkCountText {
+            font-size: 2em;
+            text-align: center
+        }
+        
+        .selected {
+          font-size: 1.4em;
+          font-weight: bold;
+          color: #000;
+        }
+        
+        .notselected {
+          font-size: 1.3em;
+          color: #333;
+        }
+        
+        span.notselected:hover {
+          text-decoration: underline;
+        }
     </style>
+
 </head>
 <body></body>
 </html>
