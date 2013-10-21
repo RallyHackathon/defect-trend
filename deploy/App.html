@@ -18,7 +18,7 @@ Ext.define('CustomApp', {
         {
             xtype: 'dayrangepicker',
             itemId: 'dayRangePicker',
-            defaultSelection: '90',   // 30|60|90
+            defaultSelection: '60',   // 30|60|90
             autoLoadSelection: true
         }
     ],
@@ -49,7 +49,7 @@ Ext.define('CustomApp', {
     _getChartData: function() {
 
         if (this.down("#myChart")) {
-          this.down("#myChart").removeAll();
+          this.remove(this.down("#myChart"));
         }
 
         console.log('getChartData');
@@ -134,7 +134,7 @@ Ext.define('CustomApp', {
     _onDefectsLoaded: function (store,data,success) {
         // we are going to use lumenize and the TimeSeriesCalculator to aggregate the data into 
         // a time series.
-        console.log('onDefectsLoaded');
+        console.log(store,data,success);
         var lumenize = window.parent.Rally.data.lookback.Lumenize;
         var snapShotData = _.map(data,function(d){return d.data});      
         
@@ -184,18 +184,14 @@ Ext.define('CustomApp', {
         // release start and end dates
 
         var daysAgo = Ext.Date.add(new Date(), Ext.Date.DAY, -this.dayRange);
-        console.log('daysAgo: ' + daysAgo);
 
         var currentDate = Ext.Date.add(new Date(), Ext.Date.DAY, 0);
-        console.log('currentDate: ' + currentDate);
 
         var startOnISOString = Rally.util.DateTime.toIsoString(daysAgo, true);
         var upToDateISOString = Rally.util.DateTime.toIsoString(currentDate, true);
         //var startOnISOString = new lumenize.Time("2013-01-01").getISOStringInTZ(config.tz)
         //var upToDateISOString = new lumenize.Time("2013-01-30").getISOStringInTZ(config.tz)
 
-        console.log('startISO: ' + startOnISOString);
-        console.log('endISO: ' + upToDateISOString);
         
         // create the calculator and add snapshots to it.
         //calculator = new Rally.data.lookback.Lumenize.TimeSeriesCalculator(config);
@@ -209,16 +205,9 @@ Ext.define('CustomApp', {
         var dt;
 
         _.each(hcData, function(seriesObj) {
-
             dt = Ext.Date.format(daysAgo, 'Y-m-d').split("-");
-
             seriesObj.pointStart = Date.UTC(dt[0], dt[1] - 1, dt[2]);
-
-            console.log('Mine: ' + seriesObj.pointStart);
-            console.log('Correct: ' + Date.UTC(2013, 9, 18));
-
-
-            seriesObj.pointInterval = 24 * 3600 * 1000
+            seriesObj.pointInterval = 24 * 3600 * 1000;
         });
 
 
