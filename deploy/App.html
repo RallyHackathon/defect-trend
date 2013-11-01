@@ -18,7 +18,7 @@ Ext.define('CustomApp', {
         {
             xtype: 'dayrangepicker',
             itemId: 'dayRangePicker',
-            defaultSelection: '60',   // 30|60|90
+            defaultSelection: '30',   // 30|60|90
             autoLoadSelection: true
         }
     ],
@@ -49,13 +49,22 @@ Ext.define('CustomApp', {
     _getChartData: function() {
 
         if (this.down("#myChart")) {
-          this.remove(this.down("#myChart"));
+          this.down("#myChart").destroy();
+          //this.remove(this.down("#myChart"));
         }
 
-        console.log('getChartData');
+        if (this.myData)
+        {
+          this._onDefectsLoaded(this.myData);
+        }
+        else
+        {
         Ext.create('Rally.data.lookback.SnapshotStore', {
             listeners: {
-                load: this._onDefectsLoaded,
+                load: function(store,data,success) {
+                  this.myData = data;
+                  this._onDefectsLoaded(this.myData);
+                },
                 scope: this
             },
             fetch: ['Name', 'Severity'],
@@ -87,6 +96,7 @@ Ext.define('CustomApp', {
             ],
             scope: this
         });
+      }
         
     },
     
@@ -131,10 +141,11 @@ Ext.define('CustomApp', {
         }
     },
     
-    _onDefectsLoaded: function (store,data,success) {
+    _onDefectsLoaded: function (data) {
         // we are going to use lumenize and the TimeSeriesCalculator to aggregate the data into 
         // a time series.
-        console.log(store,data,success);
+
+
         var lumenize = window.parent.Rally.data.lookback.Lumenize;
         var snapShotData = _.map(data,function(d){return d.data});      
         
@@ -184,16 +195,18 @@ Ext.define('CustomApp', {
         // release start and end dates
 
         var daysAgo = Ext.Date.add(new Date(), Ext.Date.DAY, -this.dayRange);
+        console.log(daysAgo);
 
         var currentDate = Ext.Date.add(new Date(), Ext.Date.DAY, 0);
 
         var startOnISOString = Rally.util.DateTime.toIsoString(daysAgo, true);
         var upToDateISOString = Rally.util.DateTime.toIsoString(currentDate, true);
-        //var startOnISOString = new lumenize.Time("2013-01-01").getISOStringInTZ(config.tz)
-        //var upToDateISOString = new lumenize.Time("2013-01-30").getISOStringInTZ(config.tz)
+
+        //var startOnISOString = new lumenize.Time("2013-09-28").getISOStringInTZ(config.tz)
+        //var upToDateISOString = new lumenize.Time("2013-10-28").getISOStringInTZ(config.tz)
 
         
-        // create the calculator and add snapshots to it.
+        // create the c alculator and add snapshots to it.
         //calculator = new Rally.data.lookback.Lumenize.TimeSeriesCalculator(config);
         calculator = new lumenize.TimeSeriesCalculator(config);
         calculator.addSnapshots(snapShotData, startOnISOString, upToDateISOString);
@@ -203,6 +216,7 @@ Ext.define('CustomApp', {
         var hcData = lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
 
         var dt;
+
 
         _.each(hcData, function(seriesObj) {
             dt = Ext.Date.format(daysAgo, 'Y-m-d').split("-");
@@ -218,8 +232,12 @@ Ext.define('CustomApp', {
             },
             itemId: 'myChart'
         });
-        
         this.add(myChart);
+        Ext.util.Observable.capture(myChart, function(e)
+        {
+          console.log('chart %s - %s', myChart.getId(), e);
+          return true;
+        });
     }
 });
 
