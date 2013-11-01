@@ -1,3 +1,30 @@
 .app {
-     /* Add app styles here */
+        
+}
+        
+.reworkCountNumber {
+    font-family: 'Carter One', cursive;
+    font-family: 'Leckerli One', cursive;
+    font-size: 10em;
+    text-align: center
+}
+
+.reworkCountText {
+    font-size: 2em;
+    text-align: center
+}
+
+.selected {
+  font-size: 1.4em;
+  font-weight: bold;
+  color: #000;
+}
+
+.notselected {
+  font-size: 1.3em;
+  color: #333;
+}
+
+span.notselected:hover {
+  text-decoration: underline;
 }

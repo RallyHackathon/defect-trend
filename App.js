@@ -2,25 +2,67 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
 
+    items: 
+    [
+        {
+            xtype: 'dayrangepicker',
+            itemId: 'dayRangePicker',
+            defaultSelection: '30',   // 30|60|90
+            autoLoadSelection: true
+        }
+    ],
+
+    dayRange: 90,
+
     launch: function() {
-        this._getChartData();
+        this.down('#dayRangePicker').on({
+            on30clicked: function() {
+                console.log(30);
+                this.dayRange = DayRangePicker.THIRTY
+                this._getChartData();
+            },
+            on60clicked: function() {
+                console.log(60);
+                this.dayRange = DayRangePicker.SIXTY
+                this._getChartData();
+            },
+            on90clicked: function() {
+                console.log(90);
+                this.dayRange = DayRangePicker.NINETY
+                this._getChartData();
+            },
+            scope: this
+        });
     },
     
     _getChartData: function() {
-        console.log("context", this.getContext(), this.getContext().getWorkspace(), this.getContext().getProject());
-        
+
+        if (this.down("#myChart")) {
+          this.down("#myChart").destroy();
+          //this.remove(this.down("#myChart"));
+        }
+
+        if (this.myData)
+        {
+          this._onDefectsLoaded(this.myData);
+        }
+        else
+        {
         Ext.create('Rally.data.lookback.SnapshotStore', {
             listeners: {
-                load: this._onDefectsLoaded,
+                load: function(store,data,success) {
+                  this.myData = data;
+                  this._onDefectsLoaded(this.myData);
+                },
                 scope: this
             },
             fetch: ['Name', 'Severity'],
             autoLoad: true,
             context: {
-                workspace: this.getContext().getWorkspaceRef(),
-                project: this.getContext().getProjectRef(),
+                workspace: '/workspace/41529001',
+                project: '/project/279050021',
                 projectScopeUp: false,
-                projectScopeDown: true
+                projectScopeDown: true,
             },
             hydrate: ['Severity'],
             filters: [
@@ -37,13 +79,14 @@ Ext.define('CustomApp', {
                 {
                     property: "Project",
                     operator: "in",
-                    value: [this.getContext().getProject().ObjectID]
+                    value: [279050021]
                 }
 
             ],
             scope: this
         });
-        console.log('project', this.getContext().getProject());
+      }
+        
     },
     
     _getChartConfiguration: function() {
@@ -52,10 +95,10 @@ Ext.define('CustomApp', {
                 type: 'area'
             },
             title: {
-                text: 'Defect Trend'
+                text: 'Historic and Estimated Worldwide Population Growth by Region'
             },
             subtitle: {
-                text: 'by Severity'
+                text: 'Source: Wikipedia.org'
             },
             xAxis: {
                 type: 'datetime'
@@ -87,13 +130,14 @@ Ext.define('CustomApp', {
         }
     },
     
-    _onDefectsLoaded: function (store,data,success) {
+    _onDefectsLoaded: function (data) {
         // we are going to use lumenize and the TimeSeriesCalculator to aggregate the data into 
         // a time series.
+
+
         var lumenize = window.parent.Rally.data.lookback.Lumenize;
         var snapShotData = _.map(data,function(d){return d.data});      
         
-        console.log("snapshots:",data);
 
 
         // can be used to 'knockout' holidays
@@ -127,17 +171,33 @@ Ext.define('CustomApp', {
           granularity: lumenize.Time.DAY,
           tz: 'America/Chicago',
           holidays: holidays,
-          workDays: 'Monday,Tuesday,Wednesday,Thursday,Friday',
+          workDays: 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
           summaryMetricsConfig: summaryMetricsConfig,
           deriveFieldsAfterSummary: derivedFieldsAfterSummary,
-          deriveFieldsOnInput: deriveFieldsOnInput
+          deriveFieldsOnInput: deriveFieldsOnInput,
         };
         
+
+
+
+
         // release start and end dates
-        var startOnISOString = new lumenize.Time("2013-09-15").getISOStringInTZ(config.tz);
-        var upToDateISOString = new lumenize.Time("2013-10-15").getISOStringInTZ(config.tz);
+
+        var daysAgo = Ext.Date.add(new Date(), Ext.Date.DAY, -this.dayRange);
+        console.log(daysAgo);
+
+        var currentDate = Ext.Date.add(new Date(), Ext.Date.DAY, 0);
+
+        var startOnISOString = Rally.util.DateTime.toIsoString(daysAgo, true);
+        var upToDateISOString = Rally.util.DateTime.toIsoString(currentDate, true);
+        console.log('start date', startOnISOString);
+        console.log('end date', upToDateISOString);
+        console.log('days ago', daysAgo);
+        //var startOnISOString = new lumenize.Time("2013-09-28").getISOStringInTZ(config.tz)
+        //var upToDateISOString = new lumenize.Time("2013-10-28").getISOStringInTZ(config.tz)
+
         
-        // create the calculator and add snapshots to it.
+        // create the c alculator and add snapshots to it.
         //calculator = new Rally.data.lookback.Lumenize.TimeSeriesCalculator(config);
         calculator = new lumenize.TimeSeriesCalculator(config);
         calculator.addSnapshots(snapShotData, startOnISOString, upToDateISOString);
@@ -146,20 +206,29 @@ Ext.define('CustomApp', {
         var hcConfig = [ { name : "defectMajor" }, { name : "defectMinor"},{name:"defectCosmetic"}];
         var hcData = lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
 
+        var dt;
+
+        console.log(hcData);
+
         _.each(hcData, function(seriesObj) {
-            seriesObj.pointStart = Date.UTC(2013, 8, 15);
+            dt = Ext.Date.format(daysAgo, 'Y-m-d').split("-");
+            seriesObj.pointStart = Date.UTC(dt[0], dt[1] - 1, dt[2]);
             seriesObj.pointInterval = 24 * 3600 * 1000;
         });
 
-        console.log("chart data: ", hcData);
 
         var myChart = Ext.create("Rally.ui.chart.Chart", {
             chartConfig: this._getChartConfiguration(),
             chartData: {
                 series: hcData
-            }
+            },
+            itemId: 'myChart'
         });
-        
         this.add(myChart);
+        Ext.util.Observable.capture(myChart, function(e)
+        {
+          console.log('chart %s - %s', myChart.getId(), e);
+          return true;
+        });
     }
 });
