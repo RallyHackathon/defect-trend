@@ -181,7 +181,7 @@
           granularity: lumenize.Time.DAY,
           tz: 'America/Chicago',
           holidays: holidays,
-          workDays: 'Monday,Tuesday,Wednesday,Thursday,Friday',
+          workDays: 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
           summaryMetricsConfig: summaryMetricsConfig,
           deriveFieldsAfterSummary: derivedFieldsAfterSummary,
           deriveFieldsOnInput: deriveFieldsOnInput,
@@ -200,7 +200,9 @@
 
         var startOnISOString = Rally.util.DateTime.toIsoString(daysAgo, true);
         var upToDateISOString = Rally.util.DateTime.toIsoString(currentDate, true);
-
+        console.log('start date', startOnISOString);
+        console.log('end date', upToDateISOString);
+        console.log('days ago', daysAgo);
         //var startOnISOString = new lumenize.Time("2013-09-28").getISOStringInTZ(config.tz)
         //var upToDateISOString = new lumenize.Time("2013-10-28").getISOStringInTZ(config.tz)
 
@@ -216,6 +218,7 @@
 
         var dt;
 
+        console.log(hcData);
 
         _.each(hcData, function(seriesObj) {
             dt = Ext.Date.format(daysAgo, 'Y-m-d').split("-");
