@@ -15,6 +15,29 @@ Ext.define('CustomApp', {
     dayRange: 90,
 
     launch: function() {
+
+
+        this.dumbChart = Ext.create("Rally.ui.chart.Chart", {
+            itemId: 'dumbChart',
+            chartConfig: {
+          chart: {
+                type: 'area'
+            }
+        },
+            chartData: {
+              series: [{
+                name: 'USA',
+                data: [null, null, null, null, null, 6 , 11, 32, 110, 235, 369, 640,
+                    10871, 10824, 10577, 10527, 10475, 10421, 10358, 10295, 10104 ]
+            }] //[{data: [1,2,3]}] //hcData
+            }
+        });
+        this.add(this.dumbChart);
+        this.down("#dumbChart").destroy();
+        //this.remove(this.down("#dumbChart"));
+
+
+
         this.down('#dayRangePicker').on({
             on30clicked: function() {
                 console.log(30);
@@ -36,6 +59,9 @@ Ext.define('CustomApp', {
     },
     
     _getChartData: function() {
+
+        var daysAgo = Ext.Date.add(new Date(), Ext.Date.DAY, -this.dayRange);
+        var startOnISOString = Rally.util.DateTime.toIsoString(daysAgo, true);
 
         if (this.down("#myChart")) {
           this.down("#myChart").destroy();
@@ -80,6 +106,12 @@ Ext.define('CustomApp', {
                     property: "Project",
                     operator: "in",
                     value: [279050021]
+                },
+                {
+                    property: "_ValidTo",
+                    operator: ">=",
+                    value: startOnISOString
+
                 }
 
             ],
@@ -135,10 +167,7 @@ Ext.define('CustomApp', {
         // a time series.
 
 
-        var lumenize = window.parent.Rally.data.lookback.Lumenize;
         var snapShotData = _.map(data,function(d){return d.data});      
-        
-
 
         // can be used to 'knockout' holidays
         var holidays = [
@@ -168,7 +197,7 @@ Ext.define('CustomApp', {
         // calculator config
         var config = {
           metrics: metrics,
-          granularity: lumenize.Time.DAY,
+          granularity: 'day',
           tz: 'America/Chicago',
           holidays: holidays,
           workDays: 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
@@ -184,31 +213,27 @@ Ext.define('CustomApp', {
         // release start and end dates
 
         var daysAgo = Ext.Date.add(new Date(), Ext.Date.DAY, -this.dayRange);
-        console.log(daysAgo);
 
         var currentDate = Ext.Date.add(new Date(), Ext.Date.DAY, 0);
 
         var startOnISOString = Rally.util.DateTime.toIsoString(daysAgo, true);
         var upToDateISOString = Rally.util.DateTime.toIsoString(currentDate, true);
-        console.log('start date', startOnISOString);
-        console.log('end date', upToDateISOString);
-        console.log('days ago', daysAgo);
         //var startOnISOString = new lumenize.Time("2013-09-28").getISOStringInTZ(config.tz)
         //var upToDateISOString = new lumenize.Time("2013-10-28").getISOStringInTZ(config.tz)
 
         
         // create the c alculator and add snapshots to it.
         //calculator = new Rally.data.lookback.Lumenize.TimeSeriesCalculator(config);
-        calculator = new lumenize.TimeSeriesCalculator(config);
+        calculator = new Rally.data.lookback.Lumenize.TimeSeriesCalculator(config);
+
         calculator.addSnapshots(snapShotData, startOnISOString, upToDateISOString);
 
         // create a high charts series config object, used to get the hc series data
         var hcConfig = [ { name : "defectMajor" }, { name : "defectMinor"},{name:"defectCosmetic"}];
-        var hcData = lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
+        var hcData = Rally.data.lookback.Lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
 
         var dt;
 
-        console.log(hcData);
 
         _.each(hcData, function(seriesObj) {
             dt = Ext.Date.format(daysAgo, 'Y-m-d').split("-");
