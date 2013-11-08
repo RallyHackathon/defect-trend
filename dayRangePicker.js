@@ -42,14 +42,14 @@ Ext.define('DayRangePicker', {
     },
     on60clicked: function() {
        if(this.s60.hasCls('selected')){ return; } // already selected, do nothing
-      this.s60.removeCls('selected').removeCls('notselected').addCls('selected')
+      this.s60.removeCls('selected').removeCls('notselected').addCls('selected');
       this.s30.removeCls('selected').removeCls('notselected').addCls('notselected');
       this.s90.removeCls('selected').removeCls('notselected').addCls('notselected');
       Rally.environment.getMessageBus().publish('DayRangePicker.rangeChanged', DayRangePicker.SIXTY, this);
     },
     on90clicked: function() {
       if(this.s90.hasCls('selected')) { return; } // already selected, do nothing
-      this.s90.removeCls('selected').removeCls('notselected').addCls('selected')
+      this.s90.removeCls('selected').removeCls('notselected').addCls('selected');
       this.s60.removeCls('selected').removeCls('notselected').addCls('notselected');
       this.s30.removeCls('selected').removeCls('notselected').addCls('notselected');
       Rally.environment.getMessageBus().publish('DayRangePicker.rangeChanged', DayRangePicker.NINETY, this);
@@ -77,7 +77,7 @@ Ext.define('DayRangePicker', {
 
   _onRangeChanged: function(dayRange, source) {
       // skip own range change request messages
-      if (source === this) { return; };
+      if (source === this) { return; }
 
       switch(dayRange) {
         case DayRangePicker.THIRTY:

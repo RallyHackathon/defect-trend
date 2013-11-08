@@ -7,7 +7,7 @@ Ext.define('CustomApp', {
         {
             xtype: 'dayrangepicker',
             itemId: 'dayRangePicker',
-            defaultSelection: '30',   // 30|60|90
+            defaultSelection: '90',   // 30|60|90
             autoLoadSelection: true
         }
     ],
@@ -36,62 +36,84 @@ Ext.define('CustomApp', {
         this.down("#dumbChart").destroy();
         //this.remove(this.down("#dumbChart"));
 
-
+        this._multiSelect();
 
         this.down('#dayRangePicker').on({
             on30clicked: function() {
                 console.log(30);
-                this.dayRange = DayRangePicker.THIRTY
+                this.dayRange = DayRangePicker.THIRTY;
                 this._getChartData();
             },
             on60clicked: function() {
                 console.log(60);
-                this.dayRange = DayRangePicker.SIXTY
+                this.dayRange = DayRangePicker.SIXTY;
                 this._getChartData();
             },
             on90clicked: function() {
                 console.log(90);
-                this.dayRange = DayRangePicker.NINETY
+                this.dayRange = DayRangePicker.NINETY;
                 this._getChartData();
             },
             scope: this
         });
     },
-    
-    _getChartData: function() {
 
+    _multiSelect: function() {
+        var defectState = Ext.create('Ext.form.Panel', {
+            title: 'Defect State',
+            
+            items:[{
+                xtype: 'checkboxgroup',
+                itemId: 'stateBox',
+                // Arrange checkboxes into six columns, distributed vertically
+                columns: 6,
+                vertical: true,
+                items: [
+                    { boxLabel: 'All', name: 'rb', inputValue: 'All'},
+                    { boxLabel: 'Assigned', name: 'rb', inputValue: 'Assigned'},
+                    { boxLabel: 'Open', name: 'rb', inputValue: 'Open', checked: true},
+                    { boxLabel: 'Fixed', name: 'rb', inputValue: 'Fixed' },
+                    { boxLabel: 'Closed', name: 'rb', inputValue: 'Closed' },
+                    { boxLabel: 'Rejected', name: 'rb', inputValue: 'Rejected' }
+                ],
+                listeners: {
+                    change: this._getChartData,
+                    scope: this
+                }   
+            }]
+        });
+        this.add(defectState);
+
+        var defectPriority = Ext.create('Ext.form.Panel', {
+            title: 'Defect Priority',
+            items:[{
+                xtype: 'checkboxgroup',
+                itemId: 'priorityBox',
+                // Arrange checkboxes into six columns, distributed vertically
+                columns: 6,
+                vertical: true,
+                items: [
+                    { boxLabel: 'All', name: 'rb', inputValue: 'All', checked: true},
+                    { boxLabel: 'No-Entry', name: 'rb', inputValue: 'No-Entry'},
+                    { boxLabel: 'High', name: 'rb', inputValue: 'High' },
+                    { boxLabel: 'Medium', name: 'rb', inputValue: 'Medium' },
+                    { boxLabel: 'Low', name: 'rb', inputValue: 'Low' }
+                ],
+                listeners: {
+                    change: this._getChartData,
+                    scope: this
+                }      
+            }]
+        });
+        this.add(defectPriority);
+    },
+
+    _getFilters: function() {
         var daysAgo = Ext.Date.add(new Date(), Ext.Date.DAY, -this.dayRange);
         var startOnISOString = Rally.util.DateTime.toIsoString(daysAgo, true);
 
-        if (this.down("#myChart")) {
-          this.down("#myChart").destroy();
-          //this.remove(this.down("#myChart"));
-        }
-
-        if (this.myData)
-        {
-          this._onDefectsLoaded(this.myData);
-        }
-        else
-        {
-        Ext.create('Rally.data.lookback.SnapshotStore', {
-            listeners: {
-                load: function(store,data,success) {
-                  this.myData = data;
-                  this._onDefectsLoaded(this.myData);
-                },
-                scope: this
-            },
-            fetch: ['Name', 'Severity'],
-            autoLoad: true,
-            context: {
-                workspace: '/workspace/41529001',
-                project: '/project/279050021',
-                projectScopeUp: false,
-                projectScopeDown: true,
-            },
-            hydrate: ['Severity'],
-            filters: [
+        var filters = 
+            [
                 {
                     property: '_TypeHierarchy',
                     operator: 'in',
@@ -111,13 +133,64 @@ Ext.define('CustomApp', {
                     property: "_ValidTo",
                     operator: ">=",
                     value: startOnISOString
-
                 }
+            ];
 
-            ],
+        
+        var stateValues = _.pluck(this.down('#stateBox').getChecked(), 'inputValue');
+        if (!_.contains(stateValues, "All") && stateValues.length)
+        {
+            filters.push({
+                property: "State",
+                operator: "in",
+                value: stateValues
+            });
+        }
+
+        var priorityValues = _.pluck(this.down('#priorityBox').getChecked(), 'inputValue');
+        if (!_.contains(priorityValues, "All"))
+        {
+            filters.push({
+                property: "Priority",
+                operator: "in",
+                value: priorityValues
+            });
+        }
+
+        return filters;
+
+    },
+    
+    _getChartData: function() {
+
+        var myFilters = this._getFilters();
+
+        if (this.down("#myChart")) {
+          this.down("#myChart").destroy();
+          //this.remove(this.down("#myChart"));
+        }
+
+        
+        Ext.create('Rally.data.lookback.SnapshotStore', {
+            listeners: {
+                load: function(store,data,success) {
+                  this._onDefectsLoaded(data);
+                },
+                scope: this
+            },
+            fetch: ['Name', 'Severity'],
+            autoLoad: true,
+            context: {
+                workspace: '/workspace/41529001',
+                project: '/project/279050021',
+                projectScopeUp: false,
+                projectScopeDown: true
+            },
+            hydrate: ['Severity'],
+            filters: myFilters,
             scope: this
         });
-      }
+      
         
     },
     
@@ -159,7 +232,7 @@ Ext.define('CustomApp', {
                     }
                 }
             }
-        }
+        };
     },
     
     _onDefectsLoaded: function (data) {
@@ -167,7 +240,7 @@ Ext.define('CustomApp', {
         // a time series.
 
 
-        var snapShotData = _.map(data,function(d){return d.data});      
+        var snapShotData = _.map(data,function(d){return d.data;});      
 
         // can be used to 'knockout' holidays
         var holidays = [
@@ -203,7 +276,7 @@ Ext.define('CustomApp', {
           workDays: 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
           summaryMetricsConfig: summaryMetricsConfig,
           deriveFieldsAfterSummary: derivedFieldsAfterSummary,
-          deriveFieldsOnInput: deriveFieldsOnInput,
+          deriveFieldsOnInput: deriveFieldsOnInput
         };
         
 
