@@ -7,12 +7,12 @@ Ext.define('CustomApp', {
         {
             xtype: 'dayrangepicker',
             itemId: 'dayRangePicker',
-            defaultSelection: '90',   // 30|60|90
+            defaultSelection: '30',   // 30|60|90
             autoLoadSelection: true
         }
     ],
 
-    dayRange: 90,
+    dayRange: 1,
 
     launch: function() {
 
@@ -27,8 +27,7 @@ Ext.define('CustomApp', {
             chartData: {
               series: [{
                 name: 'USA',
-                data: [null, null, null, null, null, 6 , 11, 32, 110, 235, 369, 640,
-                    10871, 10824, 10577, 10527, 10475, 10421, 10358, 10295, 10104 ]
+                data: [6]
             }] //[{data: [1,2,3]}] //hcData
             }
         });
@@ -69,17 +68,22 @@ Ext.define('CustomApp', {
                 columns: 6,
                 vertical: true,
                 items: [
-                    { boxLabel: 'All', name: 'rb', inputValue: 'All'},
+                    { boxLabel: 'All', name: 'rb', inputValue: 'All', checked: true},
                     { boxLabel: 'Assigned', name: 'rb', inputValue: 'Assigned'},
-                    { boxLabel: 'Open', name: 'rb', inputValue: 'Open', checked: true},
+                    { boxLabel: 'Open', name: 'rb', inputValue: 'Open'},
                     { boxLabel: 'Fixed', name: 'rb', inputValue: 'Fixed' },
                     { boxLabel: 'Closed', name: 'rb', inputValue: 'Closed' },
                     { boxLabel: 'Rejected', name: 'rb', inputValue: 'Rejected' }
-                ],
-                listeners: {
-                    change: this._getChartData,
+                ]   
+            },
+            {
+                xtype: 'button',
+                text: 'Select',
+                listeners:
+                {
+                    click: this._getChartData,
                     scope: this
-                }   
+                }
             }]
         });
         this.add(defectState);
@@ -98,11 +102,16 @@ Ext.define('CustomApp', {
                     { boxLabel: 'High', name: 'rb', inputValue: 'High' },
                     { boxLabel: 'Medium', name: 'rb', inputValue: 'Medium' },
                     { boxLabel: 'Low', name: 'rb', inputValue: 'Low' }
-                ],
-                listeners: {
-                    change: this._getChartData,
+                ]  
+            }, 
+            {
+                xtype: 'button',
+                text: 'Select',
+                listeners:
+                {
+                    click: this._getChartData,
                     scope: this
-                }      
+                }
             }]
         });
         this.add(defectPriority);
