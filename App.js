@@ -2,20 +2,12 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
 
-    items: 
-    [
-        {
-            xtype: 'dayrangepicker',
-            itemId: 'dayRangePicker',
-            defaultSelection: '30',   // 30|60|90
-            autoLoadSelection: true
-        }
-    ],
-
-    dayRange: 1,
+    dayRange: 30,
+    severityValues: [],
+    priorityValues: [],
+    stateValues: [],
 
     launch: function() {
-
 
         this.dumbChart = Ext.create("Rally.ui.chart.Chart", {
             itemId: 'dumbChart',
@@ -35,7 +27,68 @@ Ext.define('CustomApp', {
         this.down("#dumbChart").destroy();
         //this.remove(this.down("#dumbChart"));
 
-        this._multiSelect();
+        Rally.data.ModelFactory.getModel({
+            type: 'Defect',
+            success: function(model) {
+                this._severityDaisyChain(model);
+            },
+            scope: this
+        });        
+    },
+
+    _severityDaisyChain: function(model) {
+        var severity = model.getField('Severity');
+        var store = severity.getAllowedValueStore();
+        store.load({
+            callback: function(data) {
+                _.each(data, function(el) {
+                    if (el.data.StringValue != "") {this.severityValues.push(el.data.StringValue);}
+                }, this);
+                console.log("severities", this.severityValues); 
+                this._priorityDaisyChain(model);
+            }, 
+            scope: this
+        }, this);
+    },
+
+    _priorityDaisyChain: function(model) {
+        var priority = model.getField('Priority');
+        var store = priority.getAllowedValueStore();
+        store.load({
+            callback: function(data) {
+                _.each(data, function(el) {
+                    if (el.data.StringValue != "") {this.priorityValues.push(el.data.StringValue);}
+                }, this);
+                console.log("priorities", this.priorityValues); 
+                this._stateDaisyChain(model);
+            }, 
+            scope: this
+        }, this);
+    },
+
+    _stateDaisyChain: function(model) {
+        var state = model.getField('State');
+        var store = state.getAllowedValueStore();
+        store.load({
+            callback: function(data) {
+                _.each(data, function(el) {
+                    if (el.data.StringValue != "") {this.stateValues.push(el.data.StringValue);}
+                }, this);
+                console.log("state values", this.stateValues); 
+                this._instantiatePicker();
+            }, 
+            scope: this
+        }, this);
+    },
+
+    _instantiatePicker: function() {
+
+        this.add({
+            xtype: 'dayrangepicker',
+            itemId: 'dayRangePicker',
+            defaultSelection: '30',   // 30|60|90
+            autoLoadSelection: true
+        });
 
         this.down('#dayRangePicker').on({
             on30clicked: function() {
@@ -55,66 +108,82 @@ Ext.define('CustomApp', {
             },
             scope: this
         });
+
+        this._multiSelect();
+        this._getChartData();
     },
 
     _multiSelect: function() {
-        var defectState = Ext.create('Ext.form.Panel', {
-            title: 'Defect State',
+        // var defectState = Ext.create('Ext.form.Panel', {
+        //     title: 'Defect State',
             
-            items:[{
-                xtype: 'checkboxgroup',
-                itemId: 'stateBox',
-                // Arrange checkboxes into six columns, distributed vertically
-                columns: 6,
-                vertical: true,
-                items: [
-                    { boxLabel: 'All', name: 'rb', inputValue: 'All', checked: true},
-                    { boxLabel: 'Assigned', name: 'rb', inputValue: 'Assigned'},
-                    { boxLabel: 'Open', name: 'rb', inputValue: 'Open'},
-                    { boxLabel: 'Fixed', name: 'rb', inputValue: 'Fixed' },
-                    { boxLabel: 'Closed', name: 'rb', inputValue: 'Closed' },
-                    { boxLabel: 'Rejected', name: 'rb', inputValue: 'Rejected' }
-                ]   
-            },
-            {
-                xtype: 'button',
-                text: 'Select',
-                listeners:
-                {
-                    click: this._getChartData,
-                    scope: this
-                }
-            }]
-        });
-        this.add(defectState);
+        //     items:[{
+        //         xtype: 'checkboxgroup',
+        //         itemId: 'stateBox',
+        //         // Arrange checkboxes into six columns, distributed vertically
+        //         columns: 6,
+        //         vertical: true,
+        //         items: [
+        //             { boxLabel: 'All', name: 'rb', inputValue: 'All', checked: true},
+        //             { boxLabel: 'Assigned', name: 'rb', inputValue: 'Assigned'},
+        //             { boxLabel: 'Open', name: 'rb', inputValue: 'Open'},
+        //             { boxLabel: 'Fixed', name: 'rb', inputValue: 'Fixed' },
+        //             { boxLabel: 'Closed', name: 'rb', inputValue: 'Closed' },
+        //             { boxLabel: 'Rejected', name: 'rb', inputValue: 'Rejected' }
+        //         ]   
+        //     },
+        //     {
+        //         xtype: 'button',
+        //         text: 'Select',
+        //         listeners:
+        //         {
+        //             click: this._getChartData,
+        //             scope: this
+        //         }
+        //     }]
+        // });
+        // this.add(defectState);
 
-        var defectPriority = Ext.create('Ext.form.Panel', {
-            title: 'Defect Priority',
-            items:[{
-                xtype: 'checkboxgroup',
-                itemId: 'priorityBox',
-                // Arrange checkboxes into six columns, distributed vertically
-                columns: 6,
-                vertical: true,
-                items: [
-                    { boxLabel: 'All', name: 'rb', inputValue: 'All', checked: true},
-                    { boxLabel: 'No-Entry', name: 'rb', inputValue: 'No-Entry'},
-                    { boxLabel: 'High', name: 'rb', inputValue: 'High' },
-                    { boxLabel: 'Medium', name: 'rb', inputValue: 'Medium' },
-                    { boxLabel: 'Low', name: 'rb', inputValue: 'Low' }
-                ]  
-            }, 
-            {
-                xtype: 'button',
-                text: 'Select',
-                listeners:
-                {
-                    click: this._getChartData,
-                    scope: this
-                }
-            }]
+        // var defectPriority = Ext.create('Ext.form.Panel', {
+        //     title: 'Defect Priority',
+        //     items:[{
+        //         xtype: 'checkboxgroup',
+        //         itemId: 'priorityBox',
+        //         // Arrange checkboxes into six columns, distributed vertically
+        //         columns: 6,
+        //         vertical: true,
+        //         items: [
+        //             { boxLabel: 'All', name: 'rb', inputValue: 'All', checked: true},
+        //             { boxLabel: 'No-Entry', name: 'rb', inputValue: 'No-Entry'},
+        //             { boxLabel: 'High', name: 'rb', inputValue: 'High' },
+        //             { boxLabel: 'Medium', name: 'rb', inputValue: 'Medium' },
+        //             { boxLabel: 'Low', name: 'rb', inputValue: 'Low' }
+        //         ]  
+        //     }, 
+        //     {
+        //         xtype: 'button',
+        //         text: 'Select',
+        //         listeners:
+        //         {
+        //             click: this._getChartData,
+        //             scope: this
+        //         }
+        //     }]
+        // });
+        // this.add(defectPriority);
+
+        var storeData = [];
+        _.each(this.severityValues, function(value) {
+            storeData.push({_ref: value, ObjectId: value, Name: value});
         });
-        this.add(defectPriority);
+
+        this.add({
+            xtype: 'rallymultiobjectpicker',
+            modelType: 'defect',
+            storeConfig: {
+                data: storeData
+            }
+        });
     },
 
     _getFilters: function() {
@@ -131,7 +200,7 @@ Ext.define('CustomApp', {
                 {
                     property: 'Severity',
                     operator: 'in',
-                    value: ['Minor Problem', 'Major Problem', 'Cosmetic']
+                    value: this.severityValues
                 },
                 {
                     property: "Project",
@@ -146,31 +215,33 @@ Ext.define('CustomApp', {
             ];
 
         
-        var stateValues = _.pluck(this.down('#stateBox').getChecked(), 'inputValue');
-        if (!_.contains(stateValues, "All") && stateValues.length)
-        {
-            filters.push({
-                property: "State",
-                operator: "in",
-                value: stateValues
-            });
-        }
+        // var stateValues = _.pluck(this.down('#stateBox').getChecked(), 'inputValue');
+        // if (!_.contains(stateValues, "All") && stateValues.length)
+        // {
+        //     filters.push({
+        //         property: "State",
+        //         operator: "in",
+        //         value: stateValues
+        //     });
+        // }
 
-        var priorityValues = _.pluck(this.down('#priorityBox').getChecked(), 'inputValue');
-        if (!_.contains(priorityValues, "All"))
-        {
-            filters.push({
-                property: "Priority",
-                operator: "in",
-                value: priorityValues
-            });
-        }
+        // var priorityValues = _.pluck(this.down('#priorityBox').getChecked(), 'inputValue');
+        // if (!_.contains(priorityValues, "All"))
+        // {
+        //     filters.push({
+        //         property: "Priority",
+        //         operator: "in",
+        //         value: priorityValues
+        //     });
+        // }
 
         return filters;
 
     },
     
     _getChartData: function() {
+
+        console.log('in get chart data');
 
         var myFilters = this._getFilters();
 
@@ -257,11 +328,19 @@ Ext.define('CustomApp', {
         ];
 
         // metrics to chart
-        var metrics = [
-            {as: 'defectMajor',     f: 'filteredCount', filterField: 'Severity', filterValues: ["Major Problem"]},
-            {as: 'defectMinor',   f: 'filteredCount', filterField: 'Severity', filterValues: ["Minor Problem"]},
-            {as: 'defectCosmetic', f: 'filteredCount', filterField: 'Severity', filterValues: ["Cosmetic"]}
-        ];
+        // var metrics = [
+        //     {as: 'defectMajor',     f: 'filteredCount', filterField: 'Severity', filterValues: ["Major Problem"]},
+        //     {as: 'defectMinor',   f: 'filteredCount', filterField: 'Severity', filterValues: ["Minor Problem"]},
+        //     {as: 'defectCosmetic', f: 'filteredCount', filterField: 'Severity', filterValues: ["Cosmetic"]}
+        // ];
+
+        var metrics = [];
+        _.each(this.severityValues, function(value) {
+            metrics.push({
+                as: value, f: 'filteredCount', filterField: 'Severity', filterValues: [value]
+            });
+        });
+        console.log(metrics);
  
         // not used yet
         var summaryMetricsConfig = [
@@ -311,7 +390,13 @@ Ext.define('CustomApp', {
         calculator.addSnapshots(snapShotData, startOnISOString, upToDateISOString);
 
         // create a high charts series config object, used to get the hc series data
-        var hcConfig = [ { name : "defectMajor" }, { name : "defectMinor"},{name:"defectCosmetic"}];
+
+        var hcConfig = []
+        _.each(this.severityValues, function(value) {
+            hcConfig.push({name: value});
+        });
+
+        //var hcConfig = [ { name : "defectMajor" }, { name : "defectMinor"},{name:"defectCosmetic"}];
         var hcData = Rally.data.lookback.Lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
 
         var dt;
