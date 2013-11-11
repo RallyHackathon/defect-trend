@@ -64,14 +64,12 @@ Ext.define('CustomApp', {
     // Load custom defect 'severity' values for the filter pulldown
     _loadDefectSeverityValues: function(model) {
         this.severity = model.getField('Severity');
-        console.log(this.severity);
         var store = this.severity.getAllowedValueStore();
         store.load({
             callback: function(data) {
                 _.each(data, function(el) {
                     if (el.data.StringValue != "") {this.severityValues.push(el.data.StringValue);}
                 }, this);
-                console.log("severities", this.severityValues); 
                 this._loadDefectPriorityValues(model);
             }, 
             scope: this
@@ -87,7 +85,6 @@ Ext.define('CustomApp', {
                 _.each(data, function(el) {
                     if (el.data.StringValue != "") {this.priorityValues.push(el.data.StringValue);}
                 }, this);
-                console.log("priorities", this.priorityValues); 
                 this._loadDefectStateValues(model);
             }, 
             scope: this
@@ -103,7 +100,6 @@ Ext.define('CustomApp', {
                 _.each(data, function(el) {
                     if (el.data.StringValue != "") {this.stateValues.push(el.data.StringValue);}
                 }, this);
-                console.log("state values", this.stateValues); 
                 this._loadDayRangeSelector();
             }, 
             scope: this
@@ -143,25 +139,56 @@ Ext.define('CustomApp', {
         this._getChartData();
     },
 
-    _multiSelect: function() {
-
+    _createMultiPicker: function(values, title) 
+    {
         var storeData = [];
-        _.each(this.severityValues, function(value) {
-            storeData.push({_ref: value, ObjectId: value, Name: value});
+        _.each(values, function(value, i) {
+            storeData.push({Name: value, ObjectID: i, _CreatedAt: i});
         });
 
         this.add({
             xtype: 'sonofrallymultiobjectpicker',
+            itemId: title,
             modelType: 'attributedefinition',
+            config: {selectionKey: '_CreatedAt'},
+            placeholderText: title,
             storeConfig: {
-                data: [
-                    {Name: 'foo'},
-                    {Name: 'bar'},
-                    {Name: 'baz'}
-                ]
+                data: storeData
+            },
+            listeners:
+            {
+                select: function() {
+                    this._getSelectedValues("#" + title);
+                },
+                scope: this
             },
             storeType: 'Rally.data.custom.Store'
         });
+
+        this.add(
+        {
+            xtype: 'button',
+            text: 'Click me',
+            handler: function() {
+                alert('You clicked the ' + title + ' button!');
+            }
+        });
+    },
+
+    _getSelectedValues: function(id) {
+        var picker = this.down(id);
+        var selected = [];
+        if (picker) {
+            _.each(picker.selectedValues.items, function(val) {
+                selected.push(val.data.Name);
+            });
+        }
+        console.log(selected);
+    },
+
+    _multiSelect: function() {
+        this._createMultiPicker(this.priorityValues, "Priorities");
+        this._createMultiPicker(this.stateValues, "States");
     },
 
     _getFilters: function() {
@@ -219,7 +246,6 @@ Ext.define('CustomApp', {
     
     _getChartData: function() {
 
-        console.log('in get chart data');
 
         var myFilters = this._getFilters();
 
@@ -318,7 +344,6 @@ Ext.define('CustomApp', {
                 as: value, f: 'filteredCount', filterField: 'Severity', filterValues: [value]
             });
         });
-        console.log(metrics);
  
         // not used yet
         var summaryMetricsConfig = [
