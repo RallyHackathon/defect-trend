@@ -25,7 +25,7 @@ Ext.define('CustomApp', {
     stateValues: [],        // custom values for defect 'state'
 
     launch: function() {
-        this._loadDumbChart();
+        //this._loadDumbChart();
         this._loadDefectFilterValues();
     },
 
@@ -70,7 +70,9 @@ Ext.define('CustomApp', {
                 _.each(data, function(el) {
                     if (el.data.StringValue != "") {this.severityValues.push(el.data.StringValue);}
                 }, this);
-                this._loadDefectPriorityValues(model);
+                // DPT not chaining calls right now
+                // this._loadDefectPriorityValues(model);
+                this._loadDayRangeSelector();
             }, 
             scope: this
         }, this);
@@ -135,7 +137,7 @@ Ext.define('CustomApp', {
             scope: this
         });
 
-        this._multiSelect();
+        //this._multiSelect();
         this._getChartData();
     },
 
@@ -187,11 +189,10 @@ Ext.define('CustomApp', {
     },
 
     _multiSelect: function() {
-        this._createMultiPicker(this.priorityValues, "Priorities");
-        this._createMultiPicker(this.stateValues, "States");
+        this._createMultiPicker(this.severityValues, "Severity");
     },
 
-    _getFilters: function() {
+    _getChartFilters: function() {
         var daysAgo = Ext.Date.add(new Date(), Ext.Date.DAY, -this.dayRange);
         var startOnISOString = Rally.util.DateTime.toIsoString(daysAgo, true);
 
@@ -210,7 +211,7 @@ Ext.define('CustomApp', {
                 {
                     property: "Project",
                     operator: "in",
-                    value: [279050021]
+                    value: [279050021]    // FIXME get from context
                 },
                 {
                     property: "_ValidTo",
@@ -246,14 +247,13 @@ Ext.define('CustomApp', {
     
     _getChartData: function() {
 
-
-        var myFilters = this._getFilters();
-
+        var myFilters = this._getChartFilters();
+console.log('filters', myFilters);
+/*
         if (this.down("#myChart")) {
           this.down("#myChart").destroy();
-          //this.remove(this.down("#myChart"));
         }
-
+*/
         
         Ext.create('Rally.data.lookback.SnapshotStore', {
             listeners: {
@@ -284,10 +284,10 @@ Ext.define('CustomApp', {
                 type: 'area'
             },
             title: {
-                text: 'Historic and Estimated Worldwide Population Growth by Region'
+                text: 'Defect Trend'
             },
             subtitle: {
-                text: 'Source: Wikipedia.org'
+                text: 'Severity'
             },
             xAxis: {
                 type: 'datetime'
@@ -320,11 +320,8 @@ Ext.define('CustomApp', {
     },
     
     _onDefectsLoaded: function (data) {
-        // we are going to use lumenize and the TimeSeriesCalculator to aggregate the data into 
-        // a time series.
 
-
-        var snapShotData = _.map(data,function(d){return d.data;});      
+        var snapShotData = _.map(data,function(d){return d.data;});
 
         // can be used to 'knockout' holidays
         var holidays = [
@@ -370,12 +367,7 @@ Ext.define('CustomApp', {
           deriveFieldsOnInput: deriveFieldsOnInput
         };
         
-
-
-
-
         // release start and end dates
-
         var daysAgo = Ext.Date.add(new Date(), Ext.Date.DAY, -this.dayRange);
 
         var currentDate = Ext.Date.add(new Date(), Ext.Date.DAY, 0);
@@ -404,13 +396,11 @@ Ext.define('CustomApp', {
 
         var dt;
 
-
         _.each(hcData, function(seriesObj) {
             dt = Ext.Date.format(daysAgo, 'Y-m-d').split("-");
             seriesObj.pointStart = Date.UTC(dt[0], dt[1] - 1, dt[2]);
             seriesObj.pointInterval = 24 * 3600 * 1000;
         });
-
 
         var myChart = Ext.create("Rally.ui.chart.Chart", {
             chartConfig: this._getChartConfiguration(),
@@ -420,10 +410,13 @@ Ext.define('CustomApp', {
             itemId: 'myChart'
         });
         this.add(myChart);
+        debugger;
+        /*
         Ext.util.Observable.capture(myChart, function(e)
         {
           console.log('chart %s - %s', myChart.getId(), e);
           return true;
         });
+        */
     }
 });
