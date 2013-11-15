@@ -255,6 +255,7 @@ Ext.define('CustomApp', {
         if (!stateText.length) { stateText = "All"; }
         else { stateText = stateText.join(", "); }
 
+        var filterTpl = new Ext.XTemplate('<p><b>{title} Foo Filters:</b>{text}</p>'); 
 
         this.down("#multiselect").add({
             xtype: 'panel',
@@ -263,23 +264,15 @@ Ext.define('CustomApp', {
                 {   
                     xtype: 'text',
                     text: "Priority Filters: ",
-                    style: {'font-weight': 700}
-                },
-                {   
-                    xtype: 'text',
-                    text: priorityText,
-                    margin: '0 10 0 2'
+                    tpl: filterTpl,
+                    data: {title: "Priority", text: priorityText}
                 },
                 {   
                     xtype: 'text',
                     text: "State Filters: ",
-                    style: {'font-weight': 700}
-                },
-                {   
-                    xtype: 'text',
-                    text: stateText,
-                    margin: '0 0 0 2'
-                },
+                    tpl: filterTpl,
+                    data: {title: "State", text: stateText}
+                }
             ],
             layout: {
                 type: "hbox"
