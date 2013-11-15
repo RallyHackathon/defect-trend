@@ -258,7 +258,8 @@ Ext.define('CustomApp', {
     _getChartConfiguration: function() {
         return{
           chart: {
-                type: 'area'
+                type: 'area',
+                zoomType: 'x'
             },
             title: {
                 text: 'Defect Trend'
@@ -267,7 +268,8 @@ Ext.define('CustomApp', {
                 text: 'Severity'
             },
             xAxis: {
-                type: 'datetime'
+                type: 'datetime',
+                maxZoom: 1 * 24 * 3600000
             },
             yAxis: {
                 title: {
