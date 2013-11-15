@@ -79,11 +79,11 @@ Ext.define('CustomApp', {
                 {
                     property: 'Severity',
                     operator: 'in',
-                    value: this.severityValues
+                    value: this.severityValues        // TODO: handle 'empty' or not selected severity
                 },
                 {
                     property: "Project",
-                    value: this.getContext().getProject().ObjectID    // FIXME get from context
+                    value: this.getContext().getProject().ObjectID
                 },
                 {
                     property: "_ValidTo",
@@ -222,6 +222,8 @@ Ext.define('CustomApp', {
         this.add(myChart);
 
         chart = this.down("#myChart");
+
+        // HACK: need to remove load mask on high-charts due to lumenize lib loading issue
         var p = Ext.get(chart.id);
         elems = p.query("div.x-mask");
         _.each(elems, function(e) { e.remove(); });
