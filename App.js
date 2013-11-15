@@ -27,6 +27,15 @@ Ext.define('CustomApp', {
 
 
     launch: function() {
+
+        this.add({
+            xtype: 'panel',
+            layout: {
+                type: 'hbox'
+            },
+            itemId: 'multiselect'
+        });
+
         Rally.sdk.dependencies.Analytics.load(this._loadDefectFilterValues, this);
     },
 
@@ -93,11 +102,12 @@ Ext.define('CustomApp', {
     // create the 30/60/90 day range selector
     _loadDayRangeSelector: function() {
 
-        this.add({
+        this.down('#multiselect').add({
             xtype: 'dayrangepicker',
             itemId: 'dayRangePicker',
             defaultSelection: '30',   // 30|60|90
-            autoLoadSelection: true
+            autoLoadSelection: true,
+            margin: 5
         });
 
         this.down('#dayRangePicker').on({
@@ -124,15 +134,17 @@ Ext.define('CustomApp', {
     _multiSelect: function() {
         this._createMultiPicker(this.priorityValues, "Priorities");
         this._createMultiPicker(this.stateValues, "States");
-        this.add(
+        this.down('#multiselect').add(
         {
             xtype: 'button',
             text: 'Go!',
+            margin: 5,
             handler: function() {
                 this._getChartData();
             },
             scope: this
         });
+
     },
 
     _createMultiPicker: function(values, title) 
@@ -142,9 +154,10 @@ Ext.define('CustomApp', {
             storeData.push({Name: value, ObjectID: i, _CreatedAt: i});
         });
 
-        this.add({
+        this.down('#multiselect').add({
             xtype: 'sonofrallymultiobjectpicker',
             itemId: title,
+            margin: 5,
             modelType: 'attributedefinition',
             config: {selectionKey: '_CreatedAt'},
             placeholderText: title,
@@ -229,6 +242,33 @@ Ext.define('CustomApp', {
         if (this.down('#myChart')) {
             this.down('#myChart').destroy();
         }
+
+        if (this.down('#multiselect').down('#labels')){
+            this.down('#multiselect').down('#labels').destroy();
+        }
+
+        this.down("#multiselect").add({
+            xtype: 'panel',
+            items: 
+            [
+                {   
+                    xtype: 'text',
+                    text: 'Priority Filters: ' + this._getSelectedValues("#Priorities"),
+                    margin: '0 0 10 10'
+                },
+                {   
+                    xtype: 'text',
+                    text: 'State Filters: ' + this._getSelectedValues("#States"),
+                    margin: '0 0 10 10'
+                },
+            ],
+            layout: {
+                type: "vbox"
+            },
+            margin: '0 0 10 10',
+            itemId: "labels",
+            border: false
+        });
 
         var myFilters = this._getChartFilters();
         
