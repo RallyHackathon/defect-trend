@@ -1,53 +1,12 @@
-Ext.define('Rally.ui.picker.SonOfMultiObjectPicker', {
-    extend: 'Rally.ui.picker.MultiObjectPicker',
-    alias: 'widget.sonofrallymultiobjectpicker',
-    _createStoreAndExpand: function() {
-console.log('creating store');
-            var storeCreator = Ext.create('Rally.data.DataStoreCreator', {
-                modelType: this.modelType,
-                storeConfig: this.storeConfig,
-                storeType: this.storeType
-            });
-            this.mon(storeCreator, 'storecreate', function(store) {
-                this.store = store;
-                this.expand();
-            }, this, {single: true});
-            storeCreator.createStore();
-    }
-});
 Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
 
     dayRange: 30,
-    severityValues: [],     // custom values for defect 'severity'
-    priorityValues: [],     // custom values for defect 'priority'
-    stateValues: [],        // custom values for defect 'state'
+    severityValues: [],
 
     launch: function() {
-        //this._loadDumbChart();
-        this._loadDefectFilterValues();
-    },
-
-    _loadDumbChart: function() {
-        this.dumbChart = Ext.create("Rally.ui.chart.Chart", {
-            itemId: 'dumbChart',
-            chartConfig: {
-              chart: {
-                type: 'area'
-            }
-          },
-            chartData: {
-              series: [{
-                name: 'USA',
-                data: [6]
-            }] //[{data: [1,2,3]}] //hcData
-            }
-        });
-        this.add(this.dumbChart);
-        this.down("#dumbChart").destroy();
-
-
+        Rally.sdk.dependencies.Analytics.load(this._loadDefectFilterValues, this);
     },
 
     // kickoff series of async value fetches for Defect attributes (severity, priority, etc)
@@ -68,39 +27,7 @@ Ext.define('CustomApp', {
         store.load({
             callback: function(data) {
                 _.each(data, function(el) {
-                    if (el.data.StringValue != "") {this.severityValues.push(el.data.StringValue);}
-                }, this);
-                // DPT not chaining calls right now
-                // this._loadDefectPriorityValues(model);
-                this._loadDayRangeSelector();
-            }, 
-            scope: this
-        }, this);
-    },
-
-    // Load custom defect 'priority' values for the filter pulldown
-    _loadDefectPriorityValues: function(model) {
-        var priority = model.getField('Priority');
-        var store = priority.getAllowedValueStore();
-        store.load({
-            callback: function(data) {
-                _.each(data, function(el) {
-                    if (el.data.StringValue != "") {this.priorityValues.push(el.data.StringValue);}
-                }, this);
-                this._loadDefectStateValues(model);
-            }, 
-            scope: this
-        }, this);
-    },
-
-    // Load custom defect 'state' values for the filter pulldown
-    _loadDefectStateValues: function(model) {
-        var state = model.getField('State');
-        var store = state.getAllowedValueStore();
-        store.load({
-            callback: function(data) {
-                _.each(data, function(el) {
-                    if (el.data.StringValue != "") {this.stateValues.push(el.data.StringValue);}
+                    if (el.data.StringValue !== "") {this.severityValues.push(el.data.StringValue);}
                 }, this);
                 this._loadDayRangeSelector();
             }, 
@@ -120,17 +47,14 @@ Ext.define('CustomApp', {
 
         this.down('#dayRangePicker').on({
             on30clicked: function() {
-                console.log('day range %i', 30);
                 this.dayRange = DayRangePicker.THIRTY;
                 this._getChartData();
             },
             on60clicked: function() {
-                console.log('day range %i', 60);
                 this.dayRange = DayRangePicker.SIXTY;
                 this._getChartData();
             },
             on90clicked: function() {
-                console.log('day range %i', 90);
                 this.dayRange = DayRangePicker.NINETY;
                 this._getChartData();
             },
@@ -139,57 +63,6 @@ Ext.define('CustomApp', {
 
         //this._multiSelect();
         this._getChartData();
-    },
-
-    _createMultiPicker: function(values, title) 
-    {
-        var storeData = [];
-        _.each(values, function(value, i) {
-            storeData.push({Name: value, ObjectID: i, _CreatedAt: i});
-        });
-
-        this.add({
-            xtype: 'sonofrallymultiobjectpicker',
-            itemId: title,
-            modelType: 'attributedefinition',
-            config: {selectionKey: '_CreatedAt'},
-            placeholderText: title,
-            storeConfig: {
-                data: storeData
-            },
-            listeners:
-            {
-                select: function() {
-                    this._getSelectedValues("#" + title);
-                },
-                scope: this
-            },
-            storeType: 'Rally.data.custom.Store'
-        });
-
-        this.add(
-        {
-            xtype: 'button',
-            text: 'Click me',
-            handler: function() {
-                alert('You clicked the ' + title + ' button!');
-            }
-        });
-    },
-
-    _getSelectedValues: function(id) {
-        var picker = this.down(id);
-        var selected = [];
-        if (picker) {
-            _.each(picker.selectedValues.items, function(val) {
-                selected.push(val.data.Name);
-            });
-        }
-        console.log(selected);
-    },
-
-    _multiSelect: function() {
-        this._createMultiPicker(this.severityValues, "Severity");
     },
 
     _getChartFilters: function() {
@@ -210,8 +83,7 @@ Ext.define('CustomApp', {
                 },
                 {
                     property: "Project",
-                    operator: "in",
-                    value: [279050021]    // FIXME get from context
+                    value: this.getContext().getProject().ObjectID    // FIXME get from context
                 },
                 {
                     property: "_ValidTo",
@@ -220,27 +92,6 @@ Ext.define('CustomApp', {
                 }
             ];
 
-        
-        // var stateValues = _.pluck(this.down('#stateBox').getChecked(), 'inputValue');
-        // if (!_.contains(stateValues, "All") && stateValues.length)
-        // {
-        //     filters.push({
-        //         property: "State",
-        //         operator: "in",
-        //         value: stateValues
-        //     });
-        // }
-
-        // var priorityValues = _.pluck(this.down('#priorityBox').getChecked(), 'inputValue');
-        // if (!_.contains(priorityValues, "All"))
-        // {
-        //     filters.push({
-        //         property: "Priority",
-        //         operator: "in",
-        //         value: priorityValues
-        //     });
-        // }
-
         return filters;
 
     },
@@ -248,12 +99,6 @@ Ext.define('CustomApp', {
     _getChartData: function() {
 
         var myFilters = this._getChartFilters();
-console.log('filters', myFilters);
-/*
-        if (this.down("#myChart")) {
-          this.down("#myChart").destroy();
-        }
-*/
         
         Ext.create('Rally.data.lookback.SnapshotStore', {
             listeners: {
@@ -265,8 +110,8 @@ console.log('filters', myFilters);
             fetch: ['Name', 'Severity'],
             autoLoad: true,
             context: {
-                workspace: '/workspace/41529001',
-                project: '/project/279050021',
+                workspace: this.getContext().getWorkspace()._ref,
+                project: this.getContext().getProject()._ref,
                 projectScopeUp: false,
                 projectScopeDown: true
             },
@@ -323,17 +168,6 @@ console.log('filters', myFilters);
 
         var snapShotData = _.map(data,function(d){return d.data;});
 
-        // can be used to 'knockout' holidays
-        var holidays = [
-            {year: 2014, month: 1, day: 1}  // Made up holiday to test knockout
-        ];
-
-        // metrics to chart
-        // var metrics = [
-        //     {as: 'defectMajor',     f: 'filteredCount', filterField: 'Severity', filterValues: ["Major Problem"]},
-        //     {as: 'defectMinor',   f: 'filteredCount', filterField: 'Severity', filterValues: ["Minor Problem"]},
-        //     {as: 'defectCosmetic', f: 'filteredCount', filterField: 'Severity', filterValues: ["Cosmetic"]}
-        // ];
 
         var metrics = [];
         _.each(this.severityValues, function(value) {
@@ -341,57 +175,33 @@ console.log('filters', myFilters);
                 as: value, f: 'filteredCount', filterField: 'Severity', filterValues: [value]
             });
         });
- 
-        // not used yet
-        var summaryMetricsConfig = [
-        ];
-        
-        var derivedFieldsAfterSummary = [
-        ];
-
-        // not used yet
-        var deriveFieldsOnInput = [
-        ];
-        
-        // small change
-        
+         
         // calculator config
         var config = {
           metrics: metrics,
           granularity: 'day',
           tz: 'America/Chicago',
-          holidays: holidays,
-          workDays: 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
-          summaryMetricsConfig: summaryMetricsConfig,
-          deriveFieldsAfterSummary: derivedFieldsAfterSummary,
-          deriveFieldsOnInput: deriveFieldsOnInput
+          workDays: 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday'
         };
         
-        // release start and end dates
         var daysAgo = Ext.Date.add(new Date(), Ext.Date.DAY, -this.dayRange);
 
         var currentDate = Ext.Date.add(new Date(), Ext.Date.DAY, 0);
 
         var startOnISOString = Rally.util.DateTime.toIsoString(daysAgo, true);
         var upToDateISOString = Rally.util.DateTime.toIsoString(currentDate, true);
-        //var startOnISOString = new lumenize.Time("2013-09-28").getISOStringInTZ(config.tz)
-        //var upToDateISOString = new lumenize.Time("2013-10-28").getISOStringInTZ(config.tz)
 
         
-        // create the c alculator and add snapshots to it.
-        //calculator = new Rally.data.lookback.Lumenize.TimeSeriesCalculator(config);
         calculator = new Rally.data.lookback.Lumenize.TimeSeriesCalculator(config);
 
         calculator.addSnapshots(snapShotData, startOnISOString, upToDateISOString);
 
-        // create a high charts series config object, used to get the hc series data
 
-        var hcConfig = []
+        var hcConfig = [];
         _.each(this.severityValues, function(value) {
             hcConfig.push({name: value});
         });
 
-        //var hcConfig = [ { name : "defectMajor" }, { name : "defectMinor"},{name:"defectCosmetic"}];
         var hcData = Rally.data.lookback.Lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
 
         var dt;
@@ -410,13 +220,13 @@ console.log('filters', myFilters);
             itemId: 'myChart'
         });
         this.add(myChart);
-        debugger;
-        /*
-        Ext.util.Observable.capture(myChart, function(e)
-        {
-          console.log('chart %s - %s', myChart.getId(), e);
-          return true;
-        });
-        */
+
+        chart = this.down("#myChart");
+        var p = Ext.get(chart.id);
+        elems = p.query("div.x-mask");
+        _.each(elems, function(e) { e.remove(); });
+        var elems = p.query("div.x-mask-msg");
+        _.each(elems, function(e) { e.remove(); });
     }
 });
+
