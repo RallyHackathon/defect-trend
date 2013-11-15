@@ -1,9 +1,30 @@
+Ext.define('Rally.ui.picker.SonOfMultiObjectPicker', {
+    extend: 'Rally.ui.picker.MultiObjectPicker',
+    alias: 'widget.sonofrallymultiobjectpicker',
+    _createStoreAndExpand: function() {
+        var storeCreator = Ext.create('Rally.data.DataStoreCreator', {
+            modelType: this.modelType,
+            storeConfig: this.storeConfig,
+            storeType: this.storeType
+        });
+        this.mon(storeCreator, 'storecreate', function(store) {
+            this.store = store;
+            this.expand();
+        }, this, {single: true});
+        storeCreator.createStore();
+    }
+});
+
+
 Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
 
     dayRange: 30,
-    severityValues: [],
+    severityValues: [],     // custom values for defect 'severity'
+    priorityValues: [],     // custom values for defect 'priority'
+    stateValues: [],        // custom values for defect 'state'
+
 
     launch: function() {
         Rally.sdk.dependencies.Analytics.load(this._loadDefectFilterValues, this);
@@ -27,7 +48,9 @@ Ext.define('CustomApp', {
         store.load({
             callback: function(data) {
                 _.each(data, function(el) {
+                    console.log(el.data.StringValue);
                     if (el.data.StringValue !== "") {this.severityValues.push(el.data.StringValue);}
+                    else {this.severityValues.push("None");}
                 }, this);
                 this._loadDayRangeSelector();
             }, 
