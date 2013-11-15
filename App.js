@@ -255,8 +255,6 @@ Ext.define('CustomApp', {
         if (!stateText.length) { stateText = "All"; }
         else { stateText = stateText.join(", "); }
 
-        var tmpl = new Ext.XTemplate('<p><b>{title} Filters:</b>{text}</p>');
-
 
         this.down("#multiselect").add({
             xtype: 'panel',
@@ -264,21 +262,29 @@ Ext.define('CustomApp', {
             [
                 {   
                     xtype: 'text',
-                    tpl: tmpl,
-                    data: {title: "Priority", text: priorityText},
-                    margin: '0 0 10 10'
+                    text: "Priority Filters: ",
+                    style: {'font-weight': 700}
                 },
                 {   
                     xtype: 'text',
-                    tpl: tmpl,
-                    data: {title: "State", text: stateText},
-                    margin: '0 0 10 10'
+                    text: priorityText,
+                    margin: '0 10 0 2'
+                },
+                {   
+                    xtype: 'text',
+                    text: "State Filters: ",
+                    style: {'font-weight': 700}
+                },
+                {   
+                    xtype: 'text',
+                    text: stateText,
+                    margin: '0 0 0 2'
                 },
             ],
             layout: {
                 type: "hbox"
             },
-            margin: '0 0 10 10',
+            margin: '12 0 0 10',
             itemId: "labels",
             border: false
         });
