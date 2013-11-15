@@ -243,33 +243,6 @@ Ext.define('CustomApp', {
             this.down('#myChart').destroy();
         }
 
-        if (this.down('#multiselect').down('#labels')){
-            this.down('#multiselect').down('#labels').destroy();
-        }
-
-        this.down("#multiselect").add({
-            xtype: 'panel',
-            items: 
-            [
-                {   
-                    xtype: 'text',
-                    text: 'Priority Filters: ' + this._getSelectedValues("#Priorities"),
-                    margin: '0 0 10 10'
-                },
-                {   
-                    xtype: 'text',
-                    text: 'State Filters: ' + this._getSelectedValues("#States"),
-                    margin: '0 0 10 10'
-                },
-            ],
-            layout: {
-                type: "vbox"
-            },
-            margin: '0 0 10 10',
-            itemId: "labels",
-            border: false
-        });
-
         var myFilters = this._getChartFilters();
         
         Ext.create('Rally.data.lookback.SnapshotStore', {
@@ -403,6 +376,44 @@ Ext.define('CustomApp', {
         _.each(elems, function(e) { e.remove(); });
         var elems = p.query("div.x-mask-msg");
         _.each(elems, function(e) { e.remove(); });
+
+        if (this.down('#labels')){
+            this.down('#labels').destroy();
+        }
+
+        var priorityText = this._getSelectedValues("#Priorities");
+        if (!priorityText.length) { priorityText = "All"; }
+        else { priorityText = priorityText.join(", "); }
+
+        var stateText = this._getSelectedValues("#States");
+        if (!stateText.length) { stateText = "All"; }
+        else { stateText = stateText.join(", "); }
+
+
+        this.add({
+            xtype: 'panel',
+            items: 
+            [
+                {   
+                    xtype: 'text',
+                    text: 'Priority Filters: ' + priorityText,
+                    margin: '0 0 10 10'
+                },
+                {   
+                    xtype: 'text',
+                    text: 'State Filters: ' + stateText,
+                    margin: '0 0 10 10'
+                },
+            ],
+            layout: {
+                type: "vbox"
+            },
+            margin: '0 0 10 10',
+            itemId: "labels",
+            border: false
+        });
+
+        
     }
 });
 
