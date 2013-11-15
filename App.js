@@ -74,7 +74,7 @@ Ext.define('CustomApp', {
         store.load({
             callback: function(data) {
                 _.each(data, function(el) {
-                    if (el.data.StringValue != "") {this.priorityValues.push(el.data.StringValue);}
+                    if (el.data.StringValue !== "") {this.priorityValues.push(el.data.StringValue);}
                 }, this);
                 this._loadDefectStateValues(model);
             }, 
@@ -89,7 +89,7 @@ Ext.define('CustomApp', {
         store.load({
             callback: function(data) {
                 _.each(data, function(el) {
-                    if (el.data.StringValue != "") {this.stateValues.push(el.data.StringValue);}
+                    if (el.data.StringValue !== "") {this.stateValues.push(el.data.StringValue);}
                 }, this);
                 this._loadDayRangeSelector();
             }, 
@@ -255,7 +255,6 @@ Ext.define('CustomApp', {
         if (!stateText.length) { stateText = "All"; }
         else { stateText = stateText.join(", "); }
 
-        var filterTpl = new Ext.XTemplate('<p><b>{title} Foo Filters:</b>{text}</p>'); 
 
         this.down("#multiselect").add({
             xtype: 'panel',
@@ -264,14 +263,22 @@ Ext.define('CustomApp', {
                 {   
                     xtype: 'text',
                     text: "Priority Filters: ",
-                    tpl: filterTpl,
-                    data: {title: "Priority", text: priorityText}
+                    style: {'font-weight': 700}
+                },
+                {   
+                    xtype: 'text',
+                    text: priorityText,
+                    margin: '0 10 0 2'
                 },
                 {   
                     xtype: 'text',
                     text: "State Filters: ",
-                    tpl: filterTpl,
-                    data: {title: "State", text: stateText}
+                    style: {'font-weight': 700}
+                },
+                {   
+                    xtype: 'text',
+                    text: stateText,
+                    margin: '0 0 0 2'
                 }
             ],
             layout: {
@@ -417,4 +424,3 @@ Ext.define('CustomApp', {
         _.each(elems, function(e) { e.remove(); });
     }
 });
-
