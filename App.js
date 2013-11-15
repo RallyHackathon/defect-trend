@@ -48,15 +48,47 @@ Ext.define('CustomApp', {
         store.load({
             callback: function(data) {
                 _.each(data, function(el) {
-                    console.log(el.data.StringValue);
                     if (el.data.StringValue !== "") {this.severityValues.push(el.data.StringValue);}
                     else {this.severityValues.push("None");}
+                }, this);
+                this._loadDefectPriorityValues(model);
+            }, 
+            scope: this
+        }, this);
+    },
+
+
+    // Load custom defect 'priority' values for the filter pulldown
+    _loadDefectPriorityValues: function(model) {
+        var priority = model.getField('Priority');
+        var store = priority.getAllowedValueStore();
+        store.load({
+            callback: function(data) {
+                _.each(data, function(el) {
+                    if (el.data.StringValue != "") {this.priorityValues.push(el.data.StringValue);}
+                }, this);
+                this._loadDefectStateValues(model);
+            }, 
+            scope: this
+        }, this);
+    },
+
+    // Load custom defect 'state' values for the filter pulldown
+    _loadDefectStateValues: function(model) {
+        var state = model.getField('State');
+        var store = state.getAllowedValueStore();
+        store.load({
+            callback: function(data) {
+                _.each(data, function(el) {
+                    if (el.data.StringValue != "") {this.stateValues.push(el.data.StringValue);}
                 }, this);
                 this._loadDayRangeSelector();
             }, 
             scope: this
         }, this);
     },
+
+
 
     // create the 30/60/90 day range selector
     _loadDayRangeSelector: function() {
@@ -84,8 +116,61 @@ Ext.define('CustomApp', {
             scope: this
         });
 
-        //this._multiSelect();
+        this._multiSelect();
         this._getChartData();
+    },
+
+
+    _multiSelect: function() {
+        this._createMultiPicker(this.priorityValues, "Priorities");
+        this._createMultiPicker(this.stateValues, "States");
+        this.add(
+        {
+            xtype: 'button',
+            text: 'Go!',
+            handler: function() {
+                this._getChartData();
+            },
+            scope: this
+        });
+    },
+
+    _createMultiPicker: function(values, title) 
+    {
+        var storeData = [];
+        _.each(values, function(value, i) {
+            storeData.push({Name: value, ObjectID: i, _CreatedAt: i});
+        });
+
+        this.add({
+            xtype: 'sonofrallymultiobjectpicker',
+            itemId: title,
+            modelType: 'attributedefinition',
+            config: {selectionKey: '_CreatedAt'},
+            placeholderText: title,
+            storeConfig: {
+                data: storeData
+            },
+            listeners:
+            {
+                select: function() {
+                    console.log(this._getSelectedValues("#" + title));
+                },
+                scope: this
+            },
+            storeType: 'Rally.data.custom.Store'
+        });
+    },
+
+    _getSelectedValues: function(id) {
+        var picker = this.down(id);
+        var selected = [];
+        if (picker) {
+            _.each(picker.selectedValues.items, function(val) {
+                selected.push(val.data.Name);
+            });
+        }
+        return selected;
     },
 
     _getChartFilters: function() {
@@ -115,11 +200,35 @@ Ext.define('CustomApp', {
                 }
             ];
 
+            var stateValues = this._getSelectedValues("#States");
+            if (stateValues.length)
+            {
+                filters.push({
+                    property: "State",
+                    operator: "in",
+                    value: stateValues
+                });
+            }
+
+            var priorityValues = this._getSelectedValues("#Priorities");
+            if (priorityValues.length)
+            {
+                filters.push({
+                    property: "Priority",
+                    operator: "in",
+                    value: priorityValues
+                });
+            }
+
         return filters;
 
     },
     
     _getChartData: function() {
+
+        if (this.down('#myChart')) {
+            this.down('#myChart').destroy();
+        }
 
         var myFilters = this._getChartFilters();
         
