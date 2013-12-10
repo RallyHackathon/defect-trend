@@ -394,7 +394,7 @@ Ext.define('CustomApp', {
         hcConfig.reverse();
         
         var hcData = Rally.data.lookback.Lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
-        hcData.reverse();
+        
 
         var dt;
 

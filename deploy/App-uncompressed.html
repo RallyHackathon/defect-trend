@@ -348,6 +348,9 @@ Ext.define('CustomApp', {
             tooltip: {
                 shared: true
             },
+            legend: {
+            	reversed: true
+            },
             plotOptions: {
                 area: {
                     stacking: 'normal',
@@ -403,7 +406,7 @@ Ext.define('CustomApp', {
         hcConfig.reverse();
         
         var hcData = Rally.data.lookback.Lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
-        hcData.reverse();
+        
 
         var dt;
 
