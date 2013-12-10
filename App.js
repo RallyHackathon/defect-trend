@@ -203,10 +203,6 @@ Ext.define('CustomApp', {
                     value: this.severityValues        // TODO: handle 'empty' or not selected severity
                 },
                 {
-                    property: "Project",
-                    value: this.getContext().getProject().ObjectID
-                },
-                {
                     property: "_ValidTo",
                     operator: ">=",
                     value: startOnISOString
