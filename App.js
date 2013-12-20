@@ -57,9 +57,9 @@ Ext.define('CustomApp', {
         store.load({
             callback: function(data) {
                 _.each(data, function(el) {
-                    if (el.data.StringValue !== "") {this.severityValues.push(el.data.StringValue);}
-                    else {this.severityValues.push("None");}
+                    if (el.data.StringValue !== "") {this.severityValues.push(el.data.StringValue);}                    
                 }, this);
+                this.severityValues.push("None");
                 this._loadDefectPriorityValues(model);
             }, 
             scope: this
@@ -201,10 +201,6 @@ Ext.define('CustomApp', {
                     property: 'Severity',
                     operator: 'in',
                     value: this.severityValues        // TODO: handle 'empty' or not selected severity
-                },
-                {
-                    property: "Project",
-                    value: this.getContext().getProject().ObjectID
                 },
                 {
                     property: "_ValidTo",
@@ -395,7 +391,10 @@ Ext.define('CustomApp', {
             hcConfig.push({name: value});
         });
 
+        hcConfig.reverse();
+        
         var hcData = Rally.data.lookback.Lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
+        
 
         var dt;
 
